@@ -328,4 +328,4 @@ class WU_Reseller_Addon {
 }
 
 // Initialize the plugin
-WU_OpenSRS_Addon::get_instance();
+WU_Reseller_Addon::get_instance();

@@ -1,0 +1,352 @@
+/**
+ * Reseller Panel Admin Styles
+ */
+
+/* Page Container */
+.reseller-panel-wrapper {
+	max-width: 1200px;
+	margin: 20px auto;
+	padding: 20px;
+	background: #fff;
+	border-radius: 4px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Section Headers */
+.reseller-panel-section-header {
+	margin-bottom: 30px;
+	padding-bottom: 20px;
+	border-bottom: 2px solid #e8e8e8;
+}
+
+.reseller-panel-section-header h2 {
+	margin: 0 0 10px 0;
+	color: #23282d;
+	font-size: 23px;
+	font-weight: 400;
+}
+
+.reseller-panel-section-header .description {
+	margin: 0;
+	color: #666;
+	font-size: 13px;
+}
+
+/* Cards */
+.reseller-panel-card {
+	background: #fff;
+	border: 1px solid #e8e8e8;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	transition: all 0.3s ease;
+}
+
+.reseller-panel-card:hover {
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reseller-panel-card h3 {
+	margin: 0 0 15px 0;
+	color: #23282d;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.reseller-panel-card .card-content {
+	color: #555;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.reseller-panel-card a {
+	color: #0073aa;
+	text-decoration: none;
+}
+
+.reseller-panel-card a:hover {
+	color: #005a87;
+	text-decoration: underline;
+}
+
+/* Grid Layout for Cards */
+.reseller-panel-cards-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 20px;
+	margin-bottom: 30px;
+}
+
+/* Forms */
+.reseller-panel-form-container {
+	background: #fff;
+	border: 1px solid #e8e8e8;
+	border-radius: 4px;
+	padding: 30px;
+	margin: 20px 0;
+}
+
+.reseller-panel-form-group {
+	margin-bottom: 25px;
+}
+
+.reseller-panel-form-group label {
+	display: block;
+	margin-bottom: 8px;
+	color: #23282d;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.reseller-panel-form-group input[type="text"],
+.reseller-panel-form-group input[type="email"],
+.reseller-panel-form-group input[type="password"],
+.reseller-panel-form-group input[type="number"],
+.reseller-panel-form-group select,
+.reseller-panel-form-group textarea {
+	width: 100%;
+	max-width: 500px;
+	padding: 8px 12px;
+	border: 1px solid #e8e8e8;
+	border-radius: 3px;
+	font-size: 13px;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	transition: border-color 0.2s;
+}
+
+.reseller-panel-form-group input:focus,
+.reseller-panel-form-group select:focus,
+.reseller-panel-form-group textarea:focus {
+	border-color: #0073aa;
+	box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+	outline: none;
+}
+
+.reseller-panel-form-group textarea {
+	min-height: 150px;
+	resize: vertical;
+}
+
+.reseller-panel-form-group .description {
+	display: block;
+	margin-top: 8px;
+	color: #666;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.reseller-panel-form-group .description a {
+	color: #0073aa;
+	text-decoration: none;
+}
+
+.reseller-panel-form-group .description a:hover {
+	text-decoration: underline;
+}
+
+/* Tables */
+.reseller-panel-table {
+	width: 100%;
+	border-collapse: collapse;
+	background: #fff;
+}
+
+.reseller-panel-table thead {
+	background: #f8f8f8;
+	border-bottom: 2px solid #e8e8e8;
+}
+
+.reseller-panel-table th {
+	padding: 12px 15px;
+	text-align: left;
+	font-size: 13px;
+	font-weight: 600;
+	color: #23282d;
+	border-bottom: 2px solid #e8e8e8;
+}
+
+.reseller-panel-table tbody tr {
+	border-bottom: 1px solid #e8e8e8;
+}
+
+.reseller-panel-table tbody tr:hover {
+	background: #f8f8f8;
+}
+
+.reseller-panel-table td {
+	padding: 12px 15px;
+	font-size: 13px;
+	color: #555;
+}
+
+/* Tabs */
+.reseller-panel-providers-tabs {
+	margin: 20px 0;
+	border-bottom: 1px solid #e8e8e8;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0;
+}
+
+.nav-tab {
+	padding: 10px 15px;
+	margin-right: 0;
+	margin-bottom: -1px;
+	border: 1px solid #e8e8e8;
+	border-bottom: none;
+	background: #fff;
+	color: #0073aa;
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.nav-tab:hover {
+	background: #f8f8f8;
+	color: #005a87;
+}
+
+.nav-tab-active {
+	background: #fff;
+	color: #23282d;
+	border-color: #e8e8e8 #e8e8e8 #fff;
+	font-weight: 600;
+}
+
+/* Help Sections */
+.reseller-panel-help {
+	background: #e7f3ff;
+	border-left: 4px solid #0073aa;
+	padding: 15px 20px;
+	margin-top: 30px;
+	border-radius: 2px;
+}
+
+.reseller-panel-help h3 {
+	margin-top: 0;
+	color: #0073aa;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.reseller-panel-help p {
+	margin: 10px 0 0 0;
+	color: #333;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+/* Buttons */
+.button {
+	padding: 5px 15px;
+	margin-right: 10px;
+	background: #f0f0f1;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	color: #24292e;
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.button:hover {
+	background: #e8e8e9;
+	border-color: #8c8f94;
+	color: #24292e;
+}
+
+.button.button-primary {
+	background: #0073aa;
+	border-color: #005a87;
+	color: #fff;
+}
+
+.button.button-primary:hover {
+	background: #005a87;
+	border-color: #00374a;
+	color: #fff;
+}
+
+/* Dashboard Cards */
+.reseller-panel-dashboard {
+	margin-top: 20px;
+}
+
+.dashboard-card {
+	background: #fff;
+	border: 1px solid #e8e8e8;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card-content h3 {
+	margin: 0 0 5px 0;
+	font-size: 16px;
+	color: #23282d;
+}
+
+.dashboard-card-content p {
+	margin: 0;
+	color: #666;
+	font-size: 13px;
+}
+
+.dashboard-card-icon {
+	font-size: 32px;
+	color: #0073aa;
+	margin-left: 20px;
+}
+
+/* Status Indicators */
+.status-enabled {
+	color: #28a745;
+	font-weight: 600;
+}
+
+.status-disabled {
+	color: #dc3545;
+	font-weight: 600;
+}
+
+.status-warning {
+	color: #ffc107;
+	font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.reseller-panel-cards-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.reseller-panel-form-group input,
+	.reseller-panel-form-group select,
+	.reseller-panel-form-group textarea {
+		max-width: 100%;
+	}
+
+	.dashboard-card {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.dashboard-card-icon {
+		margin-left: 0;
+		margin-top: 15px;
+	}
+}

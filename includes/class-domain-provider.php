@@ -2,7 +2,7 @@
 /**
  * Domain Provider Facade
  *
- * Chooses between OpenSRS and NameCheap based on settings or per-product meta.
+ * Chooses between available providers based on settings or per-product meta.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
