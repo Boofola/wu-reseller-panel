@@ -40,18 +40,18 @@ class WU_OpenSRS_Domain_Importer {
             <div class="wu-p-6 wu-my-4 wu-bg-white wu-rounded wu-border wu-shadow-sm">
                 <h3 class="wu-text-lg wu-font-bold wu-mb-4 wu-flex wu-items-center">
                     <span class="dashicons dashicons-download wu-mr-2"></span>
-                    <?php esc_html_e( 'TLD Management', 'wu-opensrs' ); ?>
+                    <?php esc_html_e( 'TLD Management', 'ultimate-multisite' ); ?>
                 </h3>
                 <div class="wu-mb-4">
                     <p class="wu-text-gray-700 wu-mb-2">
                         <?php
                         if ( $tld_count > 0 ) {
                             printf(
-                                esc_html__( 'Currently managing %d TLDs in the system.', 'wu-opensrs' ),
+                                esc_html__( 'Currently managing %d TLDs in the system.', 'ultimate-multisite' ),
                                 (int) $tld_count
                             );
                         } else {
-                            esc_html_e( 'No TLDs imported yet. Click "Import TLDs" to fetch the available TLDs from your OpenSRS account.', 'wu-opensrs' );
+                            esc_html_e( 'No TLDs imported yet. Click "Import TLDs" to fetch the available TLDs from your OpenSRS account.', 'ultimate-multisite' );
                         }
                         ?>
                     </p>
@@ -59,7 +59,7 @@ class WU_OpenSRS_Domain_Importer {
                         <p class="wu-text-sm wu-text-gray-600">
                             <?php
                             printf(
-                                esc_html__( 'Last import: %s', 'wu-opensrs' ),
+                                esc_html__( 'Last import: %s', 'ultimate-multisite' ),
                                 wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $last_import ) )
                             );
                             ?>
@@ -69,12 +69,12 @@ class WU_OpenSRS_Domain_Importer {
                 <div class="wu-flex wu-gap-3">
                     <button type="button" id="wu-opensrs-import-tlds" class="button button-primary">
                         <span class="dashicons dashicons-download wu-mr-1"></span>
-                        <?php echo $tld_count > 0 ? esc_html__( 'Re-import TLDs', 'wu-opensrs' ) : esc_html__( 'Import TLDs from OpenSRS', 'wu-opensrs' ); ?>
+                        <?php echo $tld_count > 0 ? esc_html__( 'Re-import TLDs', 'ultimate-multisite' ) : esc_html__( 'Import TLDs from OpenSRS', 'ultimate-multisite' ); ?>
                     </button>
                     <?php if ( $tld_count > 0 ) : ?>
                         <button type="button" id="wu-opensrs-refresh-pricing" class="button">
                             <span class="dashicons dashicons-update wu-mr-1"></span>
-                            <?php esc_html_e( 'Refresh Pricing', 'wu-opensrs' ); ?>
+                            <?php esc_html_e( 'Refresh Pricing', 'ultimate-multisite' ); ?>
                         </button>
                     <?php endif; ?>
                 </div>
@@ -82,19 +82,19 @@ class WU_OpenSRS_Domain_Importer {
                     <div class="wu-p-4 wu-bg-blue-50 wu-border wu-border-blue-200 wu-rounded">
                         <p class="wu-text-blue-800">
                             <span class="dashicons dashicons-update wu-animate-spin"></span>
-                            <span id="wu-opensrs-import-message"><?php esc_html_e( 'Processing...', 'wu-opensrs' ); ?></span>
+                            <span id="wu-opensrs-import-message"><?php esc_html_e( 'Processing...', 'ultimate-multisite' ); ?></span>
                         </p>
                     </div>
                 </div>
                 <div id="wu-opensrs-import-result" class="wu-mt-4" style="display:none;"></div>
                 <div class="wu-mt-4 wu-p-4 wu-bg-gray-50 wu-rounded">
-                    <h4 class="wu-font-semibold wu-mb-2"><?php esc_html_e( 'About TLD Import', 'wu-opensrs' ); ?></h4>
+                    <h4 class="wu-font-semibold wu-mb-2"><?php esc_html_e( 'About TLD Import', 'ultimate-multisite' ); ?></h4>
                     <ul class="wu-list-disc wu-list-inside wu-text-sm wu-text-gray-700 wu-space-y-1">
-                        <li><?php esc_html_e( 'Import fetches all TLDs available in your provider account', 'wu-opensrs' ); ?></li>
-                        <li><?php esc_html_e( 'Pricing information is automatically retrieved for each TLD', 'wu-opensrs' ); ?></li>
-                        <li><?php esc_html_e( 'Only enabled TLDs in your account will be imported', 'wu-opensrs' ); ?></li>
-                        <li><?php esc_html_e( 'Use "Refresh Pricing" to update prices without re-importing TLDs', 'wu-opensrs' ); ?></li>
-                        <li><?php esc_html_e( 'Pricing automatically updates daily via cron job', 'wu-opensrs' ); ?></li>
+                        <li><?php esc_html_e( 'Import fetches all TLDs available in your provider account', 'ultimate-multisite' ); ?></li>
+                        <li><?php esc_html_e( 'Pricing information is automatically retrieved for each TLD', 'ultimate-multisite' ); ?></li>
+                        <li><?php esc_html_e( 'Only enabled TLDs in your account will be imported', 'ultimate-multisite' ); ?></li>
+                        <li><?php esc_html_e( 'Use "Refresh Pricing" to update prices without re-importing TLDs', 'ultimate-multisite' ); ?></li>
+                        <li><?php esc_html_e( 'Pricing automatically updates daily via cron job', 'ultimate-multisite' ); ?></li>
                     </ul>
                 </div>
             </div>
@@ -165,22 +165,22 @@ class WU_OpenSRS_Domain_Importer {
     public function ajax_import_tlds() {
         check_ajax_referer( 'wu-opensrs-import', 'nonce' );
         if ( ! current_user_can( 'manage_network' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wu-opensrs' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
         }
         $result = $this->import_tlds_from_provider();
         if ( is_wp_error( $result ) ) {
             wp_send_json_error( array( 'message' => $result->get_error_message() ) );
         }
-        wp_send_json_success( array( 'message' => __( 'TLDs imported successfully!', 'wu-opensrs' ), 'count' => $result ) );
+        wp_send_json_success( array( 'message' => __( 'TLDs imported successfully!', 'ultimate-multisite' ), 'count' => $result ) );
     }
 
     public function ajax_refresh_tlds() {
         check_ajax_referer( 'wu-opensrs-import', 'nonce' );
         if ( ! current_user_can( 'manage_network' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wu-opensrs' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
         }
         do_action( 'wu_opensrs_update_pricing' );
-        wp_send_json_success( array( 'message' => __( 'Pricing refreshed successfully!', 'wu-opensrs' ) ) );
+        wp_send_json_success( array( 'message' => __( 'Pricing refreshed successfully!', 'ultimate-multisite' ) ) );
     }
 
     private function import_tlds_from_provider() {
@@ -189,7 +189,7 @@ class WU_OpenSRS_Domain_Importer {
             return $pricing_data;
         }
         if ( empty( $pricing_data ) || ! is_array( $pricing_data ) ) {
-            return new \WP_Error( 'no_tlds', __( 'No TLDs found in your account.', 'wu-opensrs' ) );
+            return new \WP_Error( 'no_tlds', __( 'No TLDs found in your account.', 'ultimate-multisite' ) );
         }
         global $wpdb;
         $table = $wpdb->prefix . 'wu_opensrs_pricing';

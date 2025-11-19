@@ -25,7 +25,7 @@ class WU_OpenSRS_Checkout {
 
     public function enqueue_scripts() {
         wp_enqueue_script( 'wu-opensrs-checkout', WU_OPENSRS_PLUGIN_URL . 'assets/js/opensrs-checkout.js', array( 'jquery' ), WU_OPENSRS_VERSION, true );
-        $strings = array( 'ajax_url' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'wu-opensrs-check' ), 'checking' => __( 'Checking domain availability...', 'wu-opensrs' ), 'error' => __( 'An error occurred. Please try again.', 'wu-opensrs' ), 'available'=> __( 'Domain is available!', 'wu-opensrs' ), 'unavailable'=> __( 'Domain is not available', 'wu-opensrs' ), );
+        $strings = array( 'ajax_url' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'wu-opensrs-check' ), 'checking' => __( 'Checking domain availability...', 'ultimate-multisite' ), 'error' => __( 'An error occurred. Please try again.', 'ultimate-multisite' ), 'available'=> __( 'Domain is available!', 'ultimate-multisite' ), 'unavailable'=> __( 'Domain is not available', 'ultimate-multisite' ), );
         wp_localize_script( 'wu-opensrs-checkout', 'wu_opensrs', $strings );
     }
 
@@ -41,23 +41,23 @@ class WU_OpenSRS_Checkout {
         $tlds = explode( ',', $allowed_tlds );
         ?>
         <?php if ( isset( $_GET['wu_domain_error'] ) && $_GET['wu_domain_error'] === 'missing_contact' ) : ?>
-            <div class="wu-alert wu-alert-error wu-mb-3"><?php esc_html_e( 'Please complete the registrant contact details to proceed with registration.', 'wu-opensrs' ); ?></div>
+            <div class="wu-alert wu-alert-error wu-mb-3"><?php esc_html_e( 'Please complete the registrant contact details to proceed with registration.', 'ultimate-multisite' ); ?></div>
         <?php endif; ?>
         <div class="wu-widget wu-mb-4" id="wu-opensrs-domain-widget">
             <div class="wu-widget-content">
-                <h3 class="wu-widget-title"><?php esc_html_e( 'Choose Your Domain', 'wu-opensrs' ); ?></h3>
+                <h3 class="wu-widget-title"><?php esc_html_e( 'Choose Your Domain', 'ultimate-multisite' ); ?></h3>
                 <div class="wu-p-4">
                     <div class="wu-flex wu-gap-2 wu-mb-3">
-                        <input type="text" id="wu-opensrs-domain-search" name="domain_name" placeholder="<?php esc_attr_e( 'yourdomain', 'wu-opensrs' ); ?>" class="wu-flex-1 wu-p-2 wu-border wu-rounded" autocomplete="off">
+                        <input type="text" id="wu-opensrs-domain-search" name="domain_name" placeholder="<?php esc_attr_e( 'yourdomain', 'ultimate-multisite' ); ?>" class="wu-flex-1 wu-p-2 wu-border wu-rounded" autocomplete="off">
                         <select id="wu-opensrs-tld-select" name="domain_tld" class="wu-p-2 wu-border wu-rounded">
                         <?php foreach ( $tlds as $tld ) : $tld = trim( $tld ); if ( empty( $tld ) ) continue; ?>
                             <option value="<?php echo esc_attr( $tld ); ?>">.<?php echo esc_html( $tld ); ?></option>
                         <?php endforeach; ?></select>
-                        <button type="button" id="wu-opensrs-check-btn" class="wu-button wu-button-primary"><?php esc_html_e( 'Check', 'wu-opensrs' ); ?></button>
+                        <button type="button" id="wu-opensrs-check-btn" class="wu-button wu-button-primary"><?php esc_html_e( 'Check', 'ultimate-multisite' ); ?></button>
                     </div>
                     <div id="wu-opensrs-result" class="wu-mt-3"></div>
                     <div id="wu-opensrs-pricing" class="wu-mt-3" style="display:none;">
-                        <?php if ( 'dynamic' === $pricing_model ) : ?><p class="wu-text-sm wu-text-gray-600"><?php esc_html_e( 'Price:', 'wu-opensrs' ); ?> <span id="wu-opensrs-price" class="wu-font-semibold"></span></p><?php endif; ?>
+                        <?php if ( 'dynamic' === $pricing_model ) : ?><p class="wu-text-sm wu-text-gray-600"><?php esc_html_e( 'Price:', 'ultimate-multisite' ); ?> <span id="wu-opensrs-price" class="wu-font-semibold"></span></p><?php endif; ?>
                     </div>
                     <input type="hidden" id="wu-opensrs-domain-available" name="domain_available" value="0">
                     <input type="hidden" id="wu-opensrs-domain-full" name="domain_full" value="">
@@ -65,19 +65,19 @@ class WU_OpenSRS_Checkout {
                     <input type="hidden" id="wu-opensrs-product-id" name="product_id" value="<?php echo esc_attr( $product_id ); ?>">
                     <input type="hidden" id="wu-opensrs-product-provider" name="product_provider" value="<?php echo esc_attr( WU_Domain_Provider::get_provider_for_product( $product_id ) ); ?>">
                     <div id="wu-opensrs-domain-contact">
-                        <h4 class="wu-font-semibold wu-mb-2"><?php esc_html_e( 'Registrant Contact (required for some providers)', 'wu-opensrs' ); ?></h4>
+                        <h4 class="wu-font-semibold wu-mb-2"><?php esc_html_e( 'Registrant Contact (required for some providers)', 'ultimate-multisite' ); ?></h4>
                         <div class="wu-grid wu-gap-2" style="grid-template-columns:repeat(2,1fr);">
-                            <input type="text" name="domain_contact[first_name]" placeholder="<?php esc_attr_e( 'First name', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[last_name]" placeholder="<?php esc_attr_e( 'Last name', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="email" name="domain_contact[email]" placeholder="<?php esc_attr_e( 'Email', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[phone]" placeholder="<?php esc_attr_e( 'Phone', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[addr1]" placeholder="<?php esc_attr_e( 'Address 1', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[city]" placeholder="<?php esc_attr_e( 'City', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[state]" placeholder="<?php esc_attr_e( 'State/Province', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[postal_code]" placeholder="<?php esc_attr_e( 'Postal Code', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
-                            <input type="text" name="domain_contact[country]" placeholder="<?php esc_attr_e( 'Country', 'wu-opensrs' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[first_name]" placeholder="<?php esc_attr_e( 'First name', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[last_name]" placeholder="<?php esc_attr_e( 'Last name', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="email" name="domain_contact[email]" placeholder="<?php esc_attr_e( 'Email', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[phone]" placeholder="<?php esc_attr_e( 'Phone', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[addr1]" placeholder="<?php esc_attr_e( 'Address 1', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[city]" placeholder="<?php esc_attr_e( 'City', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[state]" placeholder="<?php esc_attr_e( 'State/Province', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[postal_code]" placeholder="<?php esc_attr_e( 'Postal Code', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
+                            <input type="text" name="domain_contact[country]" placeholder="<?php esc_attr_e( 'Country', 'ultimate-multisite' ); ?>" class="wu-p-2 wu-border wu-rounded">
                         </div>
-                        <p class="wu-text-sm wu-text-gray-600 wu-mt-2"><?php esc_html_e( 'These fields are required by some registrars (for example NameCheap). If you leave them blank, registration may fail.', 'wu-opensrs' ); ?></p>
+                        <p class="wu-text-sm wu-text-gray-600 wu-mt-2"><?php esc_html_e( 'These fields are required by some registrars (for example NameCheap). If you leave them blank, registration may fail.', 'ultimate-multisite' ); ?></p>
                     </div>
                 </div>
             </div>
@@ -90,7 +90,7 @@ class WU_OpenSRS_Checkout {
         $domain = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
         $tld = isset( $_POST['tld'] ) ? sanitize_text_field( wp_unslash( $_POST['tld'] ) ) : '';
         $product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
-        if ( empty( $domain ) || empty( $tld ) ) { wp_send_json_error( array( 'message' => __( 'Invalid domain', 'wu-opensrs' ) ) ); }
+        if ( empty( $domain ) || empty( $tld ) ) { wp_send_json_error( array( 'message' => __( 'Invalid domain', 'ultimate-multisite' ) ) ); }
         $full = $domain . '.' . $tld;
         $result = WU_Domain_Provider::lookup_domain( $full, $product_id );
         if ( is_wp_error( $result ) ) { wp_send_json_error( array( 'message' => $result->get_error_message() ) ); }
@@ -137,7 +137,7 @@ class WU_OpenSRS_Checkout {
         $contact = isset( $_POST['domain_contact'] ) && is_array( $_POST['domain_contact'] ) ? wp_unslash( $_POST['domain_contact'] ) : array();
         foreach ( $required as $f ) { if ( empty( $contact[ $f ] ) ) { $missing[] = $f; } }
         if ( ! empty( $missing ) ) {
-            $msg = __( 'Please complete registrant contact details for NameCheap domains.', 'wu-opensrs' );
+            $msg = __( 'Please complete registrant contact details for NameCheap domains.', 'ultimate-multisite' );
             if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) { wp_send_json_error( array( 'message' => $msg ) ); }
             if ( is_array( $checkout_errors ) ) { $checkout_errors[] = $msg; return; }
             $ref = wp_get_referer() ? wp_get_referer() : home_url(); $redirect = add_query_arg( 'wu_domain_error', 'missing_contact', $ref ); wp_safe_redirect( $redirect ); exit;

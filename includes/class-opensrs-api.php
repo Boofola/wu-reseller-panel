@@ -29,7 +29,7 @@ class WU_OpenSRS_API {
 	 * @return string
 	 */
 	private static function get_endpoint() {
-		$mode = wu_get_setting( 'opensrs_mode', 'test' );
+		$mode = get_site_option( 'opensrs_mode', 'test' );
 		return ( 'live' === $mode ) ? self::LIVE_ENDPOINT : self::TEST_ENDPOINT;
 	}
 	
@@ -40,7 +40,7 @@ class WU_OpenSRS_API {
 	 * @return string
 	 */
 	private static function generate_signature( $xml ) {
-		$api_key = wu_get_setting( 'opensrs_api_key', '' );
+		$api_key = get_site_option( 'opensrs_api_key', '' );
 		$md5_signature = md5( md5( $xml . $api_key ) . $api_key );
 		return $md5_signature;
 	}
@@ -52,7 +52,7 @@ class WU_OpenSRS_API {
 	 * @return array|WP_Error
 	 */
 	private static function make_request( $xml ) {
-		$username = wu_get_setting( 'opensrs_username', '' );
+		$username = get_site_option( 'opensrs_username', '' );
 		$signature = self::generate_signature( $xml );
 		$endpoint = self::get_endpoint();
 		
@@ -204,13 +204,13 @@ class WU_OpenSRS_API {
 		if ( 1 === $response['is_success'] ) {
 			return array(
 				'success' => true,
-				'message' => __( 'Connection successful!', 'wu-opensrs' ),
+				'message' => __( 'Connection successful!', 'ultimate-multisite' ),
 			);
 		}
 		
 		return array(
 			'success' => false,
-			'message' => isset( $response['response_text'] ) ? $response['response_text'] : __( 'Connection failed', 'wu-opensrs' ),
+			'message' => isset( $response['response_text'] ) ? $response['response_text'] : __( 'Connection failed', 'ultimate-multisite' ),
 		);
 	}
 	

@@ -18,15 +18,6 @@ This repository contains the Domain Manager plugin for Ultimate Multisite.
 - `includes/class-opensrs-api.php` — OpenSRS API wrapper (provider-specific)
 - `includes/class-domain-provider.php` — provider facade routing calls to the selected provider
 
-## Files removed
-The following legacy files were removed (their behavior has been ported to `class-domain-manager-*` replacements). Backups are available — do not hesitate to restore if needed.
-- `includes/class-opensrs-settings.php`
-- `includes/class-opensrs-product-type.php`
-- `includes/class-opensrs-domain-importer.php`
-- `includes/class-opensrs-pricing.php`
-- `includes/class-opensrs-renewals.php`
-- `includes/class-opensrs-checkout.php`
-
 ## Development checks
 A PowerShell helper `dev-check.ps1` was added to the repository root to run quick local diagnostics (PHP lint and brace balance). To run it locally (Windows PowerShell):
 
@@ -45,15 +36,11 @@ Get-ChildItem -Path . -Recurse -Filter *.php | ForEach-Object { php -l $_.FullNa
 A GitHub Actions workflow at `.github/workflows/php-lint.yml` runs `php -l` on all PHP files for pushes and pull requests to `main`.
 
 ## Rollback / Backup
-You indicated you have backups; the removed files are safe to restore from your backups if you change your mind.
+Always make sure to use backups before testing new code and plugins.
 
 ## Next steps
 - Test the plugin on a staging environment and run `.\dev-check.ps1` to ensure no syntax regressions.
 - If everything is good, consider deleting backups or archiving them externally.
-
-If you want, I can also:
-- Create a small migration note in the plugin admin page.
-- Run a search to ensure there are no remaining references to the deleted filenames in the codebase.
 
 ---
 Generated on November 18, 2025.

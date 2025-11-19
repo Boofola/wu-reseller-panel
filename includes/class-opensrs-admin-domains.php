@@ -23,8 +23,8 @@ class WU_OpenSRS_Admin_Domains {
 	
 	public function add_menu_page() {
 		add_menu_page(
-			__( 'Domains', 'wu-opensrs' ),
-			__( 'Domains', 'wu-opensrs' ),
+			__( 'Domains', 'ultimate-multisite' ),
+			__( 'Domains', 'ultimate-multisite' ),
 			'manage_network',
 			'wu-opensrs-domains',
 			array( $this, 'render_domains_page' ),
@@ -36,10 +36,10 @@ class WU_OpenSRS_Admin_Domains {
 	public function render_domains_page() {
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Domains', 'wu-opensrs' ); ?></h1>
+			<h1><?php esc_html_e( 'Domains', 'ultimate-multisite' ); ?></h1>
 			
 			<!-- Add list table rendering here -->
-			<p><?php esc_html_e( 'Domain management coming soon.', 'wu-opensrs' ); ?></p>
+			<p><?php esc_html_e( 'Domain management coming soon.', 'ultimate-multisite' ); ?></p>
 		</div>
 		<?php
 	}

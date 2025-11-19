@@ -47,7 +47,7 @@ class WU_OpenSRS_Customer_Dashboard {
 		}
 		
 		$tabs['domains'] = array(
-			'title' => __( 'My Domains', 'wu-opensrs' ),
+			'title' => __( 'My Domains', 'ultimate-multisite' ),
 			'icon' => 'dashicons-admin-site-alt3',
 		);
 		
@@ -71,11 +71,11 @@ class WU_OpenSRS_Customer_Dashboard {
 		
 		?>
 		<div>
-			<h2><?php esc_html_e( 'My Domains', 'wu-opensrs' ); ?></h2>
+			<h2><?php esc_html_e( 'My Domains', 'ultimate-multisite' ); ?></h2>
 
 			<?php if ( empty( $domains ) ) : ?>
 				<div>
-					<p><?php esc_html_e( 'You don\'t have any domains yet.', 'wu-opensrs' ); ?></p>
+					<p><?php esc_html_e( 'You don\'t have any domains yet.', 'ultimate-multisite' ); ?></p>
 				</div>
 			<?php else : ?>
 				<div>
@@ -86,24 +86,24 @@ class WU_OpenSRS_Customer_Dashboard {
 									<h3>
 										<?php echo esc_html( $domain->domain_name ); ?>
 										<?php if ( 'active' === $domain->status ) : ?>
-											<span><?php esc_html_e( 'Active', 'wu-opensrs' ); ?></span>
+											<span><?php esc_html_e( 'Active', 'ultimate-multisite' ); ?></span>
 										<?php endif; ?>
 									</h3>
                                     
 									<div>
 										<p>
-											<strong><?php esc_html_e( 'Registered:', 'wu-opensrs' ); ?></strong>
+											<strong><?php esc_html_e( 'Registered:', 'ultimate-multisite' ); ?></strong>
 											<?php echo wp_date( get_option( 'date_format' ), strtotime( $domain->registration_date ) ); ?>
 										</p>
 										<p>
-											<strong><?php esc_html_e( 'Expires:', 'wu-opensrs' ); ?></strong>
+											<strong><?php esc_html_e( 'Expires:', 'ultimate-multisite' ); ?></strong>
 											<?php echo wp_date( get_option( 'date_format' ), strtotime( $domain->expiration_date ) ); ?>
 										</p>
 									</div>
 								</div>
 
 								<button class="button" data-toggle="details" data-domain-id="<?php echo esc_attr( $domain->id ); ?>">
-									<?php esc_html_e( 'Manage', 'wu-opensrs' ); ?>
+									<?php esc_html_e( 'Manage', 'ultimate-multisite' ); ?>
 								</button>
 							</div>
 
@@ -112,22 +112,22 @@ class WU_OpenSRS_Customer_Dashboard {
 								
 								<!-- Auto-Renew Toggle -->
 								<div>
-									<h4><?php esc_html_e( 'Auto-Renewal', 'wu-opensrs' ); ?></h4>
+									<h4><?php esc_html_e( 'Auto-Renewal', 'ultimate-multisite' ); ?></h4>
 									<label>
 										<input type="checkbox" 
 											data-action="toggle-autorenew"
 											data-domain-id="<?php echo esc_attr( $domain->id ); ?>"
 											<?php checked( $domain->auto_renew, 1 ); ?>>
-										<span><?php esc_html_e( 'Automatically renew this domain before expiration', 'wu-opensrs' ); ?></span>
+										<span><?php esc_html_e( 'Automatically renew this domain before expiration', 'ultimate-multisite' ); ?></span>
 									</label>
 									<p class="description">
-										<?php esc_html_e( 'When enabled, your domain will be automatically renewed before it expires.', 'wu-opensrs' ); ?>
+										<?php esc_html_e( 'When enabled, your domain will be automatically renewed before it expires.', 'ultimate-multisite' ); ?>
 									</p>
 								</div>
 								
 								<!-- Nameservers -->
 								<div>
-									<h4><?php esc_html_e( 'Nameservers', 'wu-opensrs' ); ?></h4>
+									<h4><?php esc_html_e( 'Nameservers', 'ultimate-multisite' ); ?></h4>
 									<form data-action="nameservers-form" data-domain-id="<?php echo esc_attr( $domain->id ); ?>">
 										<?php
 										$nameservers = json_decode( $domain->nameservers, true ) ?: array( '', '', '', '' );
@@ -139,52 +139,52 @@ class WU_OpenSRS_Customer_Dashboard {
 													placeholder="ns<?php echo $i; ?>.example.com">
 										<?php endfor; ?>
 										<button type="submit" class="button">
-											<?php esc_html_e( 'Update Nameservers', 'wu-opensrs' ); ?>
+											<?php esc_html_e( 'Update Nameservers', 'ultimate-multisite' ); ?>
 										</button>
 									</form>
 								</div>
 								
 								<!-- WHOIS Privacy -->
 								<div>
-									<h4><?php esc_html_e( 'WHOIS Privacy', 'wu-opensrs' ); ?></h4>
+									<h4><?php esc_html_e( 'WHOIS Privacy', 'ultimate-multisite' ); ?></h4>
 									<label>
 										<input type="checkbox" 
 											data-action="toggle-whois"
 											data-domain-id="<?php echo esc_attr( $domain->id ); ?>"
 											<?php checked( $domain->whois_privacy, 1 ); ?>>
-										<span><?php esc_html_e( 'Enable WHOIS Privacy Protection', 'wu-opensrs' ); ?></span>
+										<span><?php esc_html_e( 'Enable WHOIS Privacy Protection', 'ultimate-multisite' ); ?></span>
 									</label>
 								</div>
 								
 								<!-- Domain Lock -->
 								<div>
-									<h4><?php esc_html_e( 'Domain Lock', 'wu-opensrs' ); ?></h4>
+									<h4><?php esc_html_e( 'Domain Lock', 'ultimate-multisite' ); ?></h4>
 									<label>
 										<input type="checkbox" 
 											data-action="toggle-lock"
 											data-domain-id="<?php echo esc_attr( $domain->id ); ?>"
 											<?php checked( $domain->domain_lock, 1 ); ?>>
-										<span><?php esc_html_e( 'Lock domain to prevent unauthorized transfers', 'wu-opensrs' ); ?></span>
+										<span><?php esc_html_e( 'Lock domain to prevent unauthorized transfers', 'ultimate-multisite' ); ?></span>
 									</label>
 								</div>
 								
 								<!-- Renewal -->
 								<div>
-									<h4><?php esc_html_e( 'Renewal', 'wu-opensrs' ); ?></h4>
+									<h4><?php esc_html_e( 'Renewal', 'ultimate-multisite' ); ?></h4>
 									<?php
 									$days_until_expiry = floor( ( strtotime( $domain->expiration_date ) - time() ) / DAY_IN_SECONDS );
 									?>
 									<p>
 										<?php
 										printf(
-											esc_html__( 'Your domain expires in %d days', 'wu-opensrs' ),
+											esc_html__( 'Your domain expires in %d days', 'ultimate-multisite' ),
 											$days_until_expiry
 										);
 										?>
 									</p>
 									<button class="button" data-action="renew-domain"
 										data-domain-id="<?php echo esc_attr( $domain->id ); ?>">
-										<?php esc_html_e( 'Renew Now', 'wu-opensrs' ); ?>
+										<?php esc_html_e( 'Renew Now', 'ultimate-multisite' ); ?>
 									</button>
 								</div>
 							</div>

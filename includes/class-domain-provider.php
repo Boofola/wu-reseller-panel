@@ -17,7 +17,7 @@ class WU_Domain_Provider {
     }
 
     public static function get_default_provider() {
-        $provider = wu_get_setting( 'wu_domain_provider_default', 'opensrs' );
+        $provider = get_site_option( 'wu_domain_provider_default', 'opensrs' );
         return $provider;
     }
 
@@ -107,7 +107,7 @@ class WU_Domain_Provider {
 
     public static function ajax_test_connection() {
         if ( ! current_user_can( 'manage_network' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied', 'wu-opensrs' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied', 'ultimate-multisite' ) ) );
         }
 
         // Determine provider from request or default
@@ -130,6 +130,6 @@ class WU_Domain_Provider {
             wp_send_json_success( array( 'message' => $res['message'] ) );
         }
 
-        wp_send_json_error( array( 'message' => is_array( $res ) && isset( $res['message'] ) ? $res['message'] : __( 'Connection failed', 'wu-opensrs' ) ) );
+        wp_send_json_error( array( 'message' => is_array( $res ) && isset( $res['message'] ) ? $res['message'] : __( 'Connection failed', 'ultimate-multisite' ) ) );
     }
 }

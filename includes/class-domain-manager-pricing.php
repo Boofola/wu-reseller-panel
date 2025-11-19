@@ -8,7 +8,7 @@ class WU_OpenSRS_Pricing {
      * Update pricing from provider
      */
     public static function update_pricing_cron() {
-        if ( ! wu_get_setting( 'opensrs_enabled', false ) ) {
+        if ( ! get_site_option( 'opensrs_enabled', false ) ) {
             return;
         }
         $pricing_data = WU_OpenSRS_API::get_pricing();

@@ -18,16 +18,16 @@ class WU_NameCheap_API {
     const LIVE_ENDPOINT = 'https://api.namecheap.com/xml.response';
 
     private static function get_endpoint() {
-        $mode = wu_get_setting( 'namecheap_mode', 'sandbox' );
+        $mode = get_site_option( 'namecheap_mode', 'sandbox' );
         return ( 'live' === $mode ) ? self::LIVE_ENDPOINT : self::SANDBOX_ENDPOINT;
     }
 
     private static function build_query( $command, $params = array() ) {
         $query = array(
-            'ApiUser'  => wu_get_setting( 'namecheap_api_user', '' ),
-            'ApiKey'   => wu_get_setting( 'namecheap_api_key', '' ),
-            'UserName' => wu_get_setting( 'namecheap_username', '' ),
-            'ClientIp' => wu_get_setting( 'namecheap_client_ip', '' ),
+            'ApiUser'  => get_site_option( 'namecheap_api_user', '' ),
+            'ApiKey'   => get_site_option( 'namecheap_api_key', '' ),
+            'UserName' => get_site_option( 'namecheap_username', '' ),
+            'ClientIp' => get_site_option( 'namecheap_client_ip', '' ),
             'Command'  => $command,
         );
 
@@ -116,7 +116,7 @@ class WU_NameCheap_API {
         }
 
         if ( 1 === $res['is_success'] ) {
-            return array( 'success' => true, 'message' => __( 'Connection successful!', 'wu-opensrs' ) );
+            return array( 'success' => true, 'message' => __( 'Connection successful!', 'ultimate-multisite' ) );
         }
 
         return array( 'success' => false, 'message' => $res['response_text'] );

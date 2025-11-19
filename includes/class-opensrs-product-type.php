@@ -54,8 +54,8 @@ class WU_OpenSRS_Product_Type {
 	 */
 	public function register_domain_product_type( $types ) {
 		$types['domain'] = array(
-			'name'        => __( 'Domain', 'wu-opensrs' ),
-			'description' => __( 'Domain registration, renewal, and transfer services', 'wu-opensrs' ),
+			'name'        => __( 'Domain', 'ultimate-multisite' ),
+			'description' => __( 'Domain registration, renewal, and transfer services', 'ultimate-multisite' ),
 			'icon'        => 'dashicons-admin-site-alt3',
 			'color'       => '#2563eb',
 			'supports'    => array( 'pricing', 'limitations' ),
@@ -87,19 +87,19 @@ class WU_OpenSRS_Product_Type {
 		
 		?>
 		<div class="postbox">
-			<h2 class="hndle"><span><?php esc_html_e( 'Domain Product Settings', 'wu-opensrs' ); ?></span></h2>
+			<h2 class="hndle"><span><?php esc_html_e( 'Domain Product Settings', 'ultimate-multisite' ); ?></span></h2>
 			<div class="inside">
 				<!-- Allowed TLDs -->
 				<p>
-					<label for="wu-opensrs-tld-selector"><?php esc_html_e( 'Allowed TLDs', 'wu-opensrs' ); ?></label><br />
+					<label for="wu-opensrs-tld-selector"><?php esc_html_e( 'Allowed TLDs', 'ultimate-multisite' ); ?></label><br />
 					<select id="wu-opensrs-tld-selector">
-						<option value=""><?php esc_html_e( 'Select TLDs to add...', 'wu-opensrs' ); ?></option>
+						<option value=""><?php esc_html_e( 'Select TLDs to add...', 'ultimate-multisite' ); ?></option>
 						<?php foreach ( (array) $available_tlds as $tld_obj ) : ?>
 							<option value="<?php echo esc_attr( $tld_obj ); ?>"><?php echo esc_html( '.' . $tld_obj ); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<button type="button" id="wu-opensrs-add-tld" class="button"><?php esc_html_e( 'Add TLD', 'wu-opensrs' ); ?></button>
-					<button type="button" id="wu-opensrs-add-all-tlds" class="button"><?php esc_html_e( 'Add All', 'wu-opensrs' ); ?></button>
+					<button type="button" id="wu-opensrs-add-tld" class="button"><?php esc_html_e( 'Add TLD', 'ultimate-multisite' ); ?></button>
+					<button type="button" id="wu-opensrs-add-all-tlds" class="button"><?php esc_html_e( 'Add All', 'ultimate-multisite' ); ?></button>
 				</p>
 				
 				<div id="wu-opensrs-selected-tlds">
@@ -118,37 +118,37 @@ class WU_OpenSRS_Product_Type {
 					?>
 				</div>
 				<input type="hidden" name="wu_opensrs_allowed_tlds" id="wu-opensrs-allowed-tlds-input" value="<?php echo esc_attr( $allowed_tlds ); ?>">
-				<p class="description"><?php esc_html_e( 'Select which TLDs customers can register with this product. Import TLDs from OpenSRS in Settings → OpenSRS.', 'wu-opensrs' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Select which TLDs customers can register with this product. Import TLDs from OpenSRS in Settings → OpenSRS.', 'ultimate-multisite' ); ?></p>
 				
 				<!-- Pricing model -->
 				<p>
-					<label><?php esc_html_e( 'Pricing Model', 'wu-opensrs' ); ?></label><br />
-					<label><input type="radio" name="wu_opensrs_pricing_model" value="fixed" <?php checked( $pricing_model, 'fixed' ); ?>> <?php esc_html_e( 'Fixed Price (Use product price)', 'wu-opensrs' ); ?></label>
-					<label><input type="radio" name="wu_opensrs_pricing_model" value="dynamic" <?php checked( $pricing_model, 'dynamic' ); ?>> <?php esc_html_e( 'Dynamic Pricing (Use OpenSRS prices)', 'wu-opensrs' ); ?></label>
+					<label><?php esc_html_e( 'Pricing Model', 'ultimate-multisite' ); ?></label><br />
+					<label><input type="radio" name="wu_opensrs_pricing_model" value="fixed" <?php checked( $pricing_model, 'fixed' ); ?>> <?php esc_html_e( 'Fixed Price (Use product price)', 'ultimate-multisite' ); ?></label>
+					<label><input type="radio" name="wu_opensrs_pricing_model" value="dynamic" <?php checked( $pricing_model, 'dynamic' ); ?>> <?php esc_html_e( 'Dynamic Pricing (Use OpenSRS prices)', 'ultimate-multisite' ); ?></label>
 				</p>
-				<p class="description"><?php esc_html_e( 'Dynamic pricing fetches current prices from OpenSRS. Fixed pricing uses the product price set above.', 'wu-opensrs' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Dynamic pricing fetches current prices from OpenSRS. Fixed pricing uses the product price set above.', 'ultimate-multisite' ); ?></p>
 				
 				<!-- Auto-Renew Default -->
 				<p>
-					<label><input type="checkbox" name="wu_opensrs_auto_renew_default" value="1" <?php checked( $auto_renew_default, '1' ); ?>> <?php esc_html_e( 'Enable Auto-Renew by Default', 'wu-opensrs' ); ?></label>
-					<p class="description"><?php esc_html_e( 'Domains registered with this product will have auto-renewal enabled by default.', 'wu-opensrs' ); ?></p>
+					<label><input type="checkbox" name="wu_opensrs_auto_renew_default" value="1" <?php checked( $auto_renew_default, '1' ); ?>> <?php esc_html_e( 'Enable Auto-Renew by Default', 'ultimate-multisite' ); ?></label>
+					<p class="description"><?php esc_html_e( 'Domains registered with this product will have auto-renewal enabled by default.', 'ultimate-multisite' ); ?></p>
 				</p>
 				
 				<!-- WHOIS Privacy Included -->
 				<p>
-					<label><input type="checkbox" name="wu_opensrs_whois_privacy_included" value="1" <?php checked( $whois_privacy_included, '1' ); ?>> <?php esc_html_e( 'Include WHOIS Privacy', 'wu-opensrs' ); ?></label>
-					<p class="description"><?php esc_html_e( 'WHOIS privacy protection will be automatically enabled for domains registered with this product.', 'wu-opensrs' ); ?></p>
+					<label><input type="checkbox" name="wu_opensrs_whois_privacy_included" value="1" <?php checked( $whois_privacy_included, '1' ); ?>> <?php esc_html_e( 'Include WHOIS Privacy', 'ultimate-multisite' ); ?></label>
+					<p class="description"><?php esc_html_e( 'WHOIS privacy protection will be automatically enabled for domains registered with this product.', 'ultimate-multisite' ); ?></p>
 				</p>
 				
 				<!-- Provider Selection -->
 				<p>
-					<label for="wu-domain-provider-select"><?php esc_html_e( 'Domain Provider', 'wu-opensrs' ); ?></label><br />
+					<label for="wu-domain-provider-select"><?php esc_html_e( 'Domain Provider', 'ultimate-multisite' ); ?></label><br />
 					<select name="wu_domain_provider" id="wu-domain-provider-select">
-						<option value=""><?php esc_html_e( 'Use default provider (settings)', 'wu-opensrs' ); ?></option>
-						<option value="opensrs" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'opensrs' ); ?>><?php esc_html_e( 'OpenSRS', 'wu-opensrs' ); ?></option>
-						<option value="namecheap" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'namecheap' ); ?>><?php esc_html_e( 'NameCheap', 'wu-opensrs' ); ?></option>
+						<option value=""><?php esc_html_e( 'Use default provider (settings)', 'ultimate-multisite' ); ?></option>
+						<option value="opensrs" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'opensrs' ); ?>><?php esc_html_e( 'OpenSRS', 'ultimate-multisite' ); ?></option>
+						<option value="namecheap" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'namecheap' ); ?>><?php esc_html_e( 'NameCheap', 'ultimate-multisite' ); ?></option>
 					</select>
-					<p class="description"><?php esc_html_e( 'Select which provider should handle domain operations for this product. Leave empty to use the global default.', 'wu-opensrs' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Select which provider should handle domain operations for this product. Leave empty to use the global default.', 'ultimate-multisite' ); ?></p>
 				</p>
 			</div>
 		</div>
@@ -263,13 +263,13 @@ class WU_OpenSRS_Product_Type {
 			$tld_array = explode( ',', $allowed_tlds );
 			$tld_count = count( $tld_array );
 			$additions[] = sprintf(
-				_n( '%d TLD available', '%d TLDs available', $tld_count, 'wu-opensrs' ),
+				_n( '%d TLD available', '%d TLDs available', $tld_count, 'ultimate-multisite' ),
 				$tld_count
 			);
 		}
 		
 		if ( '1' === $whois_privacy ) {
-			$additions[] = __( 'WHOIS Privacy included', 'wu-opensrs' );
+			$additions[] = __( 'WHOIS Privacy included', 'ultimate-multisite' );
 		}
 		
 		if ( ! empty( $additions ) ) {

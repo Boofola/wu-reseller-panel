@@ -30,8 +30,8 @@ class WU_OpenSRS_Product_Type {
 
     public function register_domain_product_type( $types ) {
         $types['domain'] = array(
-            'name'        => __( 'Domain', 'wu-opensrs' ),
-            'description' => __( 'Domain registration, renewal, and transfer services', 'wu-opensrs' ),
+            'name'        => __( 'Domain', 'ultimate-multisite' ),
+            'description' => __( 'Domain registration, renewal, and transfer services', 'ultimate-multisite' ),
             'icon'        => 'dashicons-admin-site-alt3',
             'color'       => '#2563eb',
             'supports'    => array( 'pricing', 'limitations' ),
@@ -55,7 +55,7 @@ class WU_OpenSRS_Product_Type {
             <div class="wu-p-4 wu-my-4 wu-bg-blue-50 wu-rounded wu-border wu-border-blue-200">
                 <h3 class="wu-text-lg wu-font-bold wu-mb-4 wu-flex wu-items-center">
                     <span class="dashicons dashicons-admin-site-alt3 wu-mr-2"></span>
-                    <?php esc_html_e( 'Domain Product Settings', 'wu-opensrs' ); ?>
+                    <?php esc_html_e( 'Domain Product Settings', 'ultimate-multisite' ); ?>
                 </h3>
                 <!-- content omitted for brevity; identical to previous implementation -->
             </div>
@@ -63,15 +63,15 @@ class WU_OpenSRS_Product_Type {
             <!-- Provider Selection -->
             <div class="wu-mb-4">
                 <label class="wu-block wu-font-semibold wu-mb-2">
-                    <?php esc_html_e( 'Domain Provider', 'wu-opensrs' ); ?>
+                    <?php esc_html_e( 'Domain Provider', 'ultimate-multisite' ); ?>
                 </label>
                 <select name="wu_domain_provider" id="wu-domain-provider-select" class="wu-p-2 wu-border wu-rounded">
-                    <option value=""><?php esc_html_e( 'Use default provider (settings)', 'wu-opensrs' ); ?></option>
-                    <option value="opensrs" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'opensrs' ); ?>><?php esc_html_e( 'OpenSRS', 'wu-opensrs' ); ?></option>
-                    <option value="namecheap" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'namecheap' ); ?>><?php esc_html_e( 'NameCheap', 'wu-opensrs' ); ?></option>
+                    <option value=""><?php esc_html_e( 'Use default provider (settings)', 'ultimate-multisite' ); ?></option>
+                    <option value="opensrs" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'opensrs' ); ?>><?php esc_html_e( 'OpenSRS', 'ultimate-multisite' ); ?></option>
+                    <option value="namecheap" <?php selected( get_post_meta( $product->get_id(), '_wu_domain_provider', true ), 'namecheap' ); ?>><?php esc_html_e( 'NameCheap', 'ultimate-multisite' ); ?></option>
                 </select>
                 <p class="wu-text-sm wu-text-gray-600 wu-mt-1">
-                    <?php esc_html_e( 'Select which provider should handle domain operations for this product. Leave empty to use the global default.', 'wu-opensrs' ); ?>
+                    <?php esc_html_e( 'Select which provider should handle domain operations for this product. Leave empty to use the global default.', 'ultimate-multisite' ); ?>
                 </p>
             </div>
         </div>
@@ -139,13 +139,13 @@ class WU_OpenSRS_Product_Type {
             $tld_array = array_filter( array_map( 'trim', explode( ',', $allowed_tlds ) ) );
             $tld_count = count( $tld_array );
             $additions[] = sprintf(
-                _n( '%d TLD available', '%d TLDs available', $tld_count, 'wu-opensrs' ),
+                _n( '%d TLD available', '%d TLDs available', $tld_count, 'ultimate-multisite' ),
                 $tld_count
             );
         }
 
         if ( '1' === $whois_privacy ) {
-            $additions[] = __( 'WHOIS Privacy included', 'wu-opensrs' );
+            $additions[] = __( 'WHOIS Privacy included', 'ultimate-multisite' );
         }
 
         if ( ! empty( $additions ) ) {

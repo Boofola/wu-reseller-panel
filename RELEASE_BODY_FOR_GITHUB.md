@@ -39,4 +39,4 @@ Files changed in this release
 - See `README.md` and `INSTALL.md` in repository root for full details and developer checks.
 
 Notes
-- If you need help publishing the release, send me the output of the `git` or `gh` commands and I can advise next steps.
+- 

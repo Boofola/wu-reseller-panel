@@ -37,8 +37,6 @@ Testing
 Get-ChildItem -Path . -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
-- Verify in Network Admin → OpenSRS Domain Manager settings that the migration notice appears and that the connection tester works for configured providers.
-
 Rollback
 - Restore files from your backups or from `archive/includes/` if necessary.
 
