@@ -107,6 +107,9 @@ class Services_Settings_Page extends Admin_Page {
 			wp_die( esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
 		}
 
+		// Handle form submission first
+		$this->handle_form_submission();
+
 		global $wpdb;
 
 		$services = $wpdb->get_results(
@@ -120,7 +123,7 @@ class Services_Settings_Page extends Admin_Page {
 		<div class="wrap">
 			<h1><?php echo esc_html( $this->page_title ); ?></h1>
 
-			<form method="post" action="">
+			<form method="post" action="<?php echo esc_url( network_admin_url( 'admin.php?page=reseller-panel-services' ) ); ?>">
 				<?php $this->render_nonce_field( 'reseller_panel_services_save', 'reseller_panel_services_nonce' ); ?>
 
 				<table class="wp-list-table widefat fixed">

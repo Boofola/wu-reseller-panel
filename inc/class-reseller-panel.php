@@ -66,11 +66,16 @@ class Reseller_Panel {
 	 * Setup WordPress hooks
 	 */
 	private function setup_hooks() {
-		// Register admin pages
-		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ) );
+		// Register admin pages - both hooks to ensure it fires
+		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
+		add_action( 'admin_menu', array( $this, 'register_admin_pages' ), 10 );
 
 		// Load admin styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+
+		// Register AJAX handlers
+		add_action( 'wp_ajax_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
+		add_action( 'wp_ajax_nopriv_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
 	}
 
 	/**
@@ -89,28 +94,45 @@ class Reseller_Panel {
 	}
 
 	/**
-	 * Register admin pages with Ultimate Multisite
+	 * Register admin pages and main menu
 	 *
 	 * @return void
 	 */
 	public function register_admin_pages() {
-		if ( ! current_user_can( 'manage_network' ) ) {
-			return;
-		}
-
-		// Register main Reseller Panel menu under Ultimate Multisite
-		add_submenu_page(
-			'wp-ultimo',
+		// Register main Reseller Panel menu as top-level menu
+		add_network_admin_menu_page(
 			__( 'Reseller Panel', 'ultimate-multisite' ),
 			__( 'Reseller Panel', 'ultimate-multisite' ),
 			'manage_network',
 			'reseller-panel',
-			array( $this, 'render_overview_page' )
+			array( $this, 'render_overview_page' ),
+			'dashicons-shopping-cart',
+			25  // Position below Ultimate Multisite menu
 		);
 
-		// Services Settings and Provider Settings pages are registered by their own classes
-		Admin_Pages\Services_Settings_Page::get_instance();
-		Admin_Pages\Provider_Settings_Page::get_instance();
+		// Initialize admin page instances first
+		$services_page = Admin_Pages\Services_Settings_Page::get_instance();
+		$provider_page = Admin_Pages\Provider_Settings_Page::get_instance();
+
+		// Register Services Settings as submenu
+		add_network_admin_submenu_page(
+			'reseller-panel',
+			__( 'Services Settings', 'ultimate-multisite' ),
+			__( 'Services Settings', 'ultimate-multisite' ),
+			'manage_network',
+			'reseller-panel-services',
+			array( $services_page, 'render_page' )
+		);
+
+		// Register Provider Settings as submenu
+		add_network_admin_submenu_page(
+			'reseller-panel',
+			__( 'Provider Settings', 'ultimate-multisite' ),
+			__( 'Provider Settings', 'ultimate-multisite' ),
+			'manage_network',
+			'reseller-panel-providers',
+			array( $provider_page, 'render_page' )
+		);
 	}
 
 	/**
@@ -133,6 +155,48 @@ class Reseller_Panel {
 			RESELLER_PANEL_VERSION,
 			true
 		);
+	}
+
+	/**
+	 * Handle AJAX test connection request
+	 *
+	 * @return void
+	 */
+	public function handle_test_connection() {
+		if ( ! \current_user_can( 'manage_network' ) ) {
+			\wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		\check_ajax_referer( 'reseller_panel_provider_save', '_wpnonce' );
+
+		$provider_key = isset( $_POST['provider'] ) ? \sanitize_key( $_POST['provider'] ) : '';
+
+		if ( empty( $provider_key ) ) {
+			\wp_send_json_error( 'No provider specified' );
+		}
+
+		// Load required classes
+		require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
+		require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
+		require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
+		require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
+		require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
+
+		$provider_manager = Provider_Manager::get_instance();
+		$provider = $provider_manager->get_provider( $provider_key );
+
+		if ( ! $provider ) {
+			\wp_send_json_error( 'Provider not found' );
+		}
+
+		// Test the connection
+		$result = $provider->test_connection();
+
+		if ( \is_wp_error( $result ) ) {
+			\wp_send_json_error( $result->get_error_message() );
+		}
+
+		\wp_send_json_success( 'Connection successful!' );
 	}
 
 	/**

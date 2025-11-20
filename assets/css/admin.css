@@ -2,6 +2,13 @@
  * Reseller Panel Admin Styles
  */
 
+/* Menu Icon */
+#menu-reseller-panel .dashicons {
+	display: inline-block;
+	vertical-align: middle;
+	margin-right: 8px;
+}
+
 /* Page Container */
 .reseller-panel-wrapper {
 	max-width: 1200px;
@@ -271,6 +278,41 @@
 	background: #005a87;
 	border-color: #00374a;
 	color: #fff;
+}
+
+.button.button-success {
+	background: #28a745;
+	border-color: #218838;
+	color: #fff;
+}
+
+.button.button-success:hover {
+	background: #218838;
+	border-color: #1e7e34;
+	color: #fff;
+}
+
+/* Test Connection Message */
+.reseller-panel-test-message {
+	display: inline-block;
+	padding: 8px 12px;
+	border-radius: 3px;
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.reseller-panel-test-message.success {
+	background: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.reseller-panel-test-message.error {
+	background: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
 }
 
 /* Dashboard Cards */

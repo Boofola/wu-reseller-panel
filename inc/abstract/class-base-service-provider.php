@@ -85,7 +85,7 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 *
 	 * @return void
 	 */
-	protected function load_config() {
+	public function load_config() {
 		$this->config = get_site_option( 'reseller_panel_' . $this->key . '_config', array() );
 	}
 
@@ -96,7 +96,7 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 *
 	 * @return void
 	 */
-	protected function save_config( $config ) {
+	public function save_config( $config ) {
 		$this->config = $config;
 		update_site_option( 'reseller_panel_' . $this->key . '_config', $config );
 	}
@@ -109,7 +109,7 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 *
 	 * @return mixed
 	 */
-	protected function get_config_value( $key, $default = null ) {
+	public function get_config_value( $key, $default = null ) {
 		if ( empty( $this->config ) ) {
 			$this->load_config();
 		}

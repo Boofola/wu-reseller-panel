@@ -10,10 +10,16 @@
 		e.preventDefault();
 
 		var $btn = $(this);
+		var $message = $btn.siblings('.reseller-panel-test-message');
 		var originalText = $btn.text();
 		var provider = $btn.data('provider');
+		var nonce = $('[name="_wpnonce"]').val();
+
+		console.log('Test connection clicked for provider:', provider);
+		console.log('Nonce value:', nonce);
 
 		$btn.prop('disabled', true).text('Testing...');
+		$message.hide().removeClass('success error');
 
 		$.ajax({
 			url: ajaxurl,
@@ -21,19 +27,33 @@
 			data: {
 				action: 'reseller_panel_test_connection',
 				provider: provider,
-				_wpnonce: $('[name="reseller_panel_provider_nonce"]').val()
+				_wpnonce: nonce
 			},
 			success: function(response) {
+				console.log('AJAX success response:', response);
+				console.log('Debug info:', response.data);
+				
 				if (response.success) {
-					alert('Connection successful!');
+					var message = response.data.message || 'Connection successful!';
+					$message.addClass('success').text('✓ ' + message).show();
 					$btn.removeClass('button-secondary').addClass('button-success');
 				} else {
-					alert('Connection failed: ' + response.data);
+					var errorMessage = response.data.message || 'Connection failed';
+					console.log('Debug array:', response.data.debug);
+					$message.addClass('error').text('✗ ' + errorMessage).show();
 					$btn.removeClass('button-success').addClass('button-secondary');
 				}
 			},
-			error: function() {
-				alert('Error testing connection');
+			error: function(xhr, status, error) {
+				console.log('AJAX error:', xhr, status, error);
+				console.log('Response text:', xhr.responseText);
+				try {
+					var errorResponse = JSON.parse(xhr.responseText);
+					console.log('Parsed error response:', errorResponse);
+				} catch(e) {
+					console.log('Could not parse error response');
+				}
+				$message.addClass('error').text('✗ Error testing connection: ' + status).show();
 			},
 			complete: function() {
 				$btn.prop('disabled', false).text(originalText);
@@ -69,17 +89,19 @@
 
 	// Show unsaved changes warning
 	var hasChanges = false;
+	var isSubmitting = false;
 
 	$('.reseller-panel-form-group input, .reseller-panel-form-group select, .reseller-panel-form-group textarea').on('change', function() {
 		hasChanges = true;
 	});
 
 	$('.reseller-panel-form-container form').on('submit', function() {
+		isSubmitting = true;
 		hasChanges = false;
 	});
 
 	$(window).on('beforeunload', function() {
-		if (hasChanges) {
+		if (hasChanges && !isSubmitting) {
 			return 'You have unsaved changes';
 		}
 	});

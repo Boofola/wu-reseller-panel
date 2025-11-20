@@ -76,6 +76,11 @@ class OpenSRS_Provider extends Base_Service_Provider {
 	 * @return bool|WP_Error
 	 */
 	public function test_connection() {
+		// Check if DOM extension is available first
+		if ( ! class_exists( '\\DOMDocument' ) && ! extension_loaded( 'dom' ) ) {
+			return new \WP_Error( 'missing_extension', __( 'PHP DOM extension is required but not enabled on this server', 'ultimate-multisite' ) );
+		}
+
 		$this->load_config();
 
 		if ( ! $this->is_configured() ) {

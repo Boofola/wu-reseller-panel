@@ -62,96 +62,46 @@ add_action(
 
 		// Initialize the addon
 		\Reseller_Panel\Reseller_Panel::get_instance();
-	}
-);
 
-/**
- * Register AJAX handlers on admin_init hook (fires after init)
- */
-add_action( 'admin_init', function() {
-	// Register AJAX handler for testing provider connection
-	$handler = function() {
-		$debug = array();
-		try {
-			$debug[] = 'Handler called';
-			
-			// Check nonce
-			if ( ! isset( $_POST['_wpnonce'] ) ) {
-				$debug[] = 'No nonce provided';
-				wp_send_json_error( array( 'message' => 'Security check failed: no nonce', 'debug' => $debug ) );
-			}
-			
-			if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'reseller_panel_provider_nonce' ) ) {
-				$debug[] = 'Invalid nonce';
-				wp_send_json_error( array( 'message' => 'Security check failed: invalid nonce', 'debug' => $debug ) );
-			}
-			
-			// Check capabilities
+		// Register AJAX handlers directly to ensure they're available
+		add_action( 'wp_ajax_reseller_panel_test_connection', function() {
 			if ( ! current_user_can( 'manage_network' ) ) {
-				$debug[] = 'Insufficient permissions';
-				wp_send_json_error( array( 'message' => 'Insufficient permissions', 'debug' => $debug ) );
+				wp_send_json_error( 'Insufficient permissions' );
 			}
 
-			// Get provider key
-			$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
-			$debug[] = 'Provider key: ' . $provider_key;
-			
-			if ( ! $provider_key ) {
-				$debug[] = 'No provider key provided';
-				wp_send_json_error( array( 'message' => 'Provider key not specified', 'debug' => $debug ) );
+			check_ajax_referer( 'reseller_panel_provider_save', '_wpnonce' );
+
+			$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : '';
+
+			if ( empty( $provider_key ) ) {
+				wp_send_json_error( 'No provider specified' );
 			}
 
-			// Load dependencies
-			$debug[] = 'Loading dependencies...';
+			// Load required classes
 			require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
 			require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
 			require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
 			require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
 			require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
-			$debug[] = 'Dependencies loaded';
 
-			// Get provider
-			$debug[] = 'Getting provider manager...';
 			$provider_manager = \Reseller_Panel\Provider_Manager::get_instance();
 			$provider = $provider_manager->get_provider( $provider_key );
-			$debug[] = 'Got provider: ' . ( $provider ? get_class( $provider ) : 'null' );
 
 			if ( ! $provider ) {
-				$debug[] = 'Provider not found: ' . $provider_key;
-				wp_send_json_error( array( 'message' => 'Provider not found: ' . $provider_key, 'debug' => $debug ) );
+				wp_send_json_error( 'Provider not found' );
 			}
 
-			// Test connection
-			$debug[] = 'Testing connection...';
+			// Test the connection
 			$result = $provider->test_connection();
-			$debug[] = 'Connection test completed';
 
 			if ( is_wp_error( $result ) ) {
-				$debug[] = 'Error returned: ' . $result->get_error_message();
-				wp_send_json_error( array( 'message' => $result->get_error_message(), 'debug' => $debug ) );
+				wp_send_json_error( $result->get_error_message() );
 			}
 
-			if ( $result === true ) {
-				$debug[] = 'Connection successful!';
-				wp_send_json_success( array( 'message' => 'Connection successful!', 'debug' => $debug ) );
-			} else {
-				$debug[] = 'Connection returned: ' . var_export( $result, true );
-				wp_send_json_error( array( 'message' => 'Connection test returned false', 'debug' => $debug ) );
-			}
-		} catch ( \Exception $e ) {
-			$debug[] = 'EXCEPTION: ' . $e->getMessage();
-			$debug[] = 'File: ' . $e->getFile() . ' Line: ' . $e->getLine();
-			wp_send_json_error( array( 'message' => $e->getMessage(), 'debug' => $debug ) );
-		} catch ( \Throwable $e ) {
-			$debug[] = 'ERROR: ' . $e->getMessage();
-			$debug[] = 'File: ' . $e->getFile() . ' Line: ' . $e->getLine();
-			wp_send_json_error( array( 'message' => $e->getMessage(), 'debug' => $debug ) );
-		}
-	};
-	
-	add_action( 'wp_ajax_reseller_panel_test_connection', $handler );
-	add_action( 'wp_ajax_nopriv_reseller_panel_test_connection', $handler );
-}, 999 );
+			wp_send_json_success( 'Connection successful!' );
+		} );
+	}
+);
 
 /**
  * Register admin menu on network_admin_menu hook

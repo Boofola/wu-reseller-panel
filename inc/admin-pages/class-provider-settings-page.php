@@ -114,6 +114,9 @@ class Provider_Settings_Page extends Admin_Page {
 			wp_die( esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
 		}
 
+		// Handle form submission first
+		$this->handle_form_submission();
+
 		$provider_manager = Provider_Manager::get_instance();
 		$providers = $provider_manager->get_all_providers();
 
@@ -159,8 +162,14 @@ class Provider_Settings_Page extends Admin_Page {
 		$config_fields = $provider->get_config_fields();
 		$config = $provider->load_config();
 
+		// Build form action URL
+		$action_url = network_admin_url( 'admin.php?page=reseller-panel-providers' );
+		if ( ! empty( $_GET['provider'] ) ) {
+			$action_url = add_query_arg( 'provider', sanitize_key( $_GET['provider'] ), $action_url );
+		}
+
 		?>
-		<form method="post" action="">
+		<form method="post" action="<?php echo esc_url( $action_url ); ?>">
 			<?php $this->render_nonce_field( 'reseller_panel_provider_save', 'reseller_panel_provider_nonce' ); ?>
 
 			<input type="hidden" name="provider_key" value="<?php echo esc_attr( $provider->get_key() ); ?>" />
@@ -217,30 +226,14 @@ class Provider_Settings_Page extends Admin_Page {
 
 				<p class="submit">
 					<?php submit_button( sprintf( __( 'Save %s Settings', 'ultimate-multisite' ), $provider->get_name() ), 'primary large', 'submit', true ); ?>
-					<a href="<?php echo esc_url( $this->get_test_connection_url( $provider ) ); ?>" class="button button-secondary">
+					<button type="button" class="button button-secondary reseller-panel-test-connection" data-provider="<?php echo esc_attr( $provider->get_key() ); ?>">
 						<?php esc_html_e( 'Test Connection', 'ultimate-multisite' ); ?>
-					</a>
+					</button>
+					<span class="reseller-panel-test-message" style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
+					<?php wp_nonce_field( 'reseller_panel_provider_nonce', '_wpnonce', false ); ?>
 				</p>
 			</div>
 		</form>
 		<?php
-	}
-
-	/**
-	 * Get test connection URL
-	 *
-	 * @param object $provider Provider instance
-	 *
-	 * @return string
-	 */
-	private function get_test_connection_url( $provider ) {
-		return add_query_arg(
-			array(
-				'action' => 'reseller_panel_test_connection',
-				'provider' => $provider->get_key(),
-				'_wpnonce' => wp_create_nonce( 'reseller_panel_test_' . $provider->get_key() ),
-			),
-			network_admin_url( 'admin-ajax.php' )
-		);
 	}
 }
