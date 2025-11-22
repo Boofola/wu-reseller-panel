@@ -315,6 +315,29 @@
 	border: 1px solid #f5c6cb;
 }
 
+/* Import Domains Message */
+.reseller-panel-import-message {
+	display: inline-block;
+	padding: 8px 12px;
+	border-radius: 3px;
+	font-size: 13px;
+	font-weight: 600;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.reseller-panel-import-message.success {
+	background: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.reseller-panel-import-message.error {
+	background: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
 /* Dashboard Cards */
 .reseller-panel-dashboard {
 	margin-top: 20px;

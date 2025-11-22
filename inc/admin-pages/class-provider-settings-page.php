@@ -160,7 +160,6 @@ class Provider_Settings_Page extends Admin_Page {
 	private function render_provider_form( $provider ) {
 		$provider->load_config();
 		$config_fields = $provider->get_config_fields();
-		$config = $provider->load_config();
 
 		// Build form action URL
 		$action_url = network_admin_url( 'admin.php?page=reseller-panel-providers' );
@@ -230,6 +229,14 @@ class Provider_Settings_Page extends Admin_Page {
 						<?php esc_html_e( 'Test Connection', 'ultimate-multisite' ); ?>
 					</button>
 					<span class="reseller-panel-test-message" style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
+					
+					<?php if ( $provider->supports_service( 'domains' ) ) : ?>
+						<button type="button" class="button button-secondary reseller-panel-import-domains" data-provider="<?php echo esc_attr( $provider->get_key() ); ?>" disabled>
+							<?php esc_html_e( 'Import Domains', 'ultimate-multisite' ); ?>
+						</button>
+						<span class="reseller-panel-import-message" style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
+					<?php endif; ?>
+					
 					<?php wp_nonce_field( 'reseller_panel_provider_nonce', '_wpnonce', false ); ?>
 				</p>
 			</div>

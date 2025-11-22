@@ -8,11 +8,12 @@
 namespace Reseller_Panel\Providers;
 
 use Reseller_Panel\Abstract_Classes\Base_Service_Provider;
+use Reseller_Panel\Interfaces\Domain_Importer_Interface;
 
 /**
  * OpenSRS Provider Class
  */
-class OpenSRS_Provider extends Base_Service_Provider {
+class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_Interface {
 
 	const TEST_ENDPOINT = 'https://horizon.opensrs.net:55443';
 	const LIVE_ENDPOINT = 'https://rr-n1-tor.opensrs.net:55443';
@@ -294,5 +295,45 @@ XML;
 		// This will integrate with UMS Product API
 		// For now, just return true
 		return true;
+	}
+
+	/**
+	 * Get available domains from OpenSRS (Domain_Importer_Interface implementation)
+	 *
+	 * Fetches the list of available domains and their pricing from the OpenSRS reseller account.
+	 *
+	 * @return array|WP_Error Array of domains on success, WP_Error on failure
+	 */
+	public function get_domains() {
+		$this->load_config();
+
+		if ( ! $this->is_configured() ) {
+			return new \WP_Error( 'not_configured', __( 'OpenSRS is not configured', 'ultimate-multisite' ) );
+		}
+
+		// Get TLD list from OpenSRS
+		$response = $this->make_request( 'DOMAIN', 'GET_TLDLIST' );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		// Extract and format domain list
+		$domains = array();
+
+		if ( isset( $response['tld_list'] ) && is_array( $response['tld_list'] ) ) {
+			foreach ( $response['tld_list'] as $tld => $data ) {
+				$domains[] = array(
+					'tld'                 => sanitize_key( $tld ),
+					'name'                => '.' . sanitize_text_field( $tld ),
+					'price'               => isset( $data['price'] ) ? floatval( $data['price'] ) : 0,
+					'registration_price'  => isset( $data['registration_price'] ) ? floatval( $data['registration_price'] ) : 0,
+					'renewal_price'       => isset( $data['renewal_price'] ) ? floatval( $data['renewal_price'] ) : 0,
+					'transfer_price'      => isset( $data['transfer_price'] ) ? floatval( $data['transfer_price'] ) : 0,
+				);
+			}
+		}
+
+		return $domains;
 	}
 }

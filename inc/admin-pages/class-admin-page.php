@@ -60,8 +60,9 @@ abstract class Admin_Page {
 	 * @return void
 	 */
 	protected function setup_hooks() {
-		add_action( 'network_admin_menu', array( $this, 'register_admin_page' ) );
-		add_action( 'load-' . $this->get_page_hook(), array( $this, 'handle_form_submission' ) );
+		// Removed: Pages are registered by Reseller_Panel class instead
+		// add_action( 'network_admin_menu', array( $this, 'register_admin_page' ) );
+		// add_action( 'load-' . $this->get_page_hook(), array( $this, 'handle_form_submission' ) );
 	}
 
 	/**

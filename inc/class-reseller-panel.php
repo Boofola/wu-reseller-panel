@@ -46,6 +46,7 @@ class Reseller_Panel {
 	private function load_dependencies() {
 		// Interfaces
 		require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
+		require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-domain-importer-interface.php';
 
 		// Base classes
 		require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
@@ -55,6 +56,12 @@ class Reseller_Panel {
 		require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
 		require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
 		require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
+
+		// Product types
+		require_once RESELLER_PANEL_PATH . 'inc/product-types/class-domain-product-type.php';
+
+		// Importers
+		require_once RESELLER_PANEL_PATH . 'inc/importers/class-domain-importer.php';
 
 		// Admin pages
 		require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
@@ -76,6 +83,16 @@ class Reseller_Panel {
 		// Register AJAX handlers
 		add_action( 'wp_ajax_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
 		add_action( 'wp_ajax_nopriv_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
+
+		// Handle form submissions for admin pages
+		add_action( 'load-reseller-panel_page_reseller-panel-services', function() {
+			$page = Admin_Pages\Services_Settings_Page::get_instance();
+			$page->handle_form_submission();
+		});
+		add_action( 'load-reseller-panel_page_reseller-panel-providers', function() {
+			$page = Admin_Pages\Provider_Settings_Page::get_instance();
+			$page->handle_form_submission();
+		});
 	}
 
 	/**
@@ -100,7 +117,7 @@ class Reseller_Panel {
 	 */
 	public function register_admin_pages() {
 		// Register main Reseller Panel menu as top-level menu
-		add_network_admin_menu_page(
+		add_menu_page(
 			__( 'Reseller Panel', 'ultimate-multisite' ),
 			__( 'Reseller Panel', 'ultimate-multisite' ),
 			'manage_network',
@@ -115,7 +132,7 @@ class Reseller_Panel {
 		$provider_page = Admin_Pages\Provider_Settings_Page::get_instance();
 
 		// Register Services Settings as submenu
-		add_network_admin_submenu_page(
+		add_submenu_page(
 			'reseller-panel',
 			__( 'Services Settings', 'ultimate-multisite' ),
 			__( 'Services Settings', 'ultimate-multisite' ),
@@ -125,7 +142,7 @@ class Reseller_Panel {
 		);
 
 		// Register Provider Settings as submenu
-		add_network_admin_submenu_page(
+		add_submenu_page(
 			'reseller-panel',
 			__( 'Provider Settings', 'ultimate-multisite' ),
 			__( 'Provider Settings', 'ultimate-multisite' ),

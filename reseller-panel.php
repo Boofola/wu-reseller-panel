@@ -154,6 +154,115 @@ add_action( 'admin_init', function() {
 }, 999 );
 
 /**
+ * Register AJAX handler for importing domains
+ */
+add_action( 'admin_init', function() {
+	// Register AJAX handler for importing domains
+	$handler = function() {
+		$debug = array();
+		try {
+			$debug[] = 'Import handler called';
+			
+			// Check nonce
+			if ( ! isset( $_POST['_wpnonce'] ) ) {
+				$debug[] = 'No nonce provided';
+				wp_send_json_error( array( 'message' => 'Security check failed: no nonce', 'debug' => $debug ) );
+			}
+			
+			if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'reseller_panel_provider_nonce' ) ) {
+				$debug[] = 'Invalid nonce';
+				wp_send_json_error( array( 'message' => 'Security check failed: invalid nonce', 'debug' => $debug ) );
+			}
+			
+			// Check capabilities
+			if ( ! current_user_can( 'manage_network' ) ) {
+				$debug[] = 'Insufficient permissions';
+				wp_send_json_error( array( 'message' => 'Insufficient permissions', 'debug' => $debug ) );
+			}
+
+			// Get provider key
+			$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
+			$debug[] = 'Provider key: ' . $provider_key;
+			
+			if ( ! $provider_key ) {
+				$debug[] = 'No provider key provided';
+				wp_send_json_error( array( 'message' => 'Provider key not specified', 'debug' => $debug ) );
+			}
+
+			// Load dependencies
+			require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
+			require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-domain-importer-interface.php';
+			require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
+			require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
+			require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
+			require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
+			require_once RESELLER_PANEL_PATH . 'inc/product-types/class-domain-product-type.php';
+			require_once RESELLER_PANEL_PATH . 'inc/importers/class-domain-importer.php';
+
+			$debug[] = 'Dependencies loaded';
+
+			// Get provider manager
+			$provider_manager = \Reseller_Panel\Provider_Manager::get_instance();
+			$debug[] = 'Got provider manager';
+
+			// Get provider
+			$provider = $provider_manager->get_provider( $provider_key );
+			if ( ! $provider ) {
+				$debug[] = 'Provider not found: ' . $provider_key;
+				wp_send_json_error( array( 'message' => 'Provider not found', 'debug' => $debug ) );
+			}
+
+			$debug[] = 'Got provider: ' . get_class( $provider );
+
+			// Check if provider implements Domain_Importer_Interface
+			if ( ! $provider instanceof \Reseller_Panel\Interfaces\Domain_Importer_Interface ) {
+				$debug[] = 'Provider does not support domain import';
+				wp_send_json_error( array( 'message' => 'Provider does not support domain import', 'debug' => $debug ) );
+			}
+
+			$debug[] = 'Starting domain import...';
+
+			// Import domains
+			$importer = new \Reseller_Panel\Importers\Domain_Importer( $provider );
+			$result = $importer->import();
+
+			if ( is_wp_error( $result ) ) {
+				$debug[] = 'Import error: ' . $result->get_error_message();
+				wp_send_json_error( array( 
+					'message' => $result->get_error_message(),
+					'debug' => $debug,
+				) );
+			}
+
+			$debug[] = 'Import completed successfully';
+
+			// Return success response
+			wp_send_json_success( array(
+				'message' => $importer->get_summary(),
+				'summary' => $importer->get_summary(),
+				'details' => $result['details'],
+				'imported' => $result['imported'],
+				'updated' => $result['updated'],
+				'skipped' => $result['skipped'],
+				'errors' => $result['errors'],
+				'debug' => $debug,
+			) );
+
+		} catch ( \Throwable $e ) {
+			$debug[] = 'ERROR: ' . $e->getMessage();
+			$debug[] = 'File: ' . $e->getFile() . ' Line: ' . $e->getLine();
+			wp_send_json_error( array( 
+				'message' => $e->getMessage(),
+				'debug' => $debug,
+			) );
+		}
+	};
+	
+	add_action( 'wp_ajax_reseller_panel_import_domains', $handler );
+	add_action( 'wp_ajax_nopriv_reseller_panel_import_domains', $handler );
+}, 999 );
+
+/**
  * Register admin menu on network_admin_menu hook
  */
 add_action(

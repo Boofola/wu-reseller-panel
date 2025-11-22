@@ -37,11 +37,24 @@
 					var message = response.data.message || 'Connection successful!';
 					$message.addClass('success').text('✓ ' + message).show();
 					$btn.removeClass('button-secondary').addClass('button-success');
+					
+					// Enable import button for this provider
+					var $importBtn = $('[data-provider="' + provider + '"].reseller-panel-import-domains');
+					if ($importBtn.length) {
+						$importBtn.prop('disabled', false);
+						console.log('Import button enabled for provider:', provider);
+					}
 				} else {
 					var errorMessage = response.data.message || 'Connection failed';
 					console.log('Debug array:', response.data.debug);
 					$message.addClass('error').text('✗ ' + errorMessage).show();
 					$btn.removeClass('button-success').addClass('button-secondary');
+					
+					// Disable import button if test fails
+					var $importBtn = $('[data-provider="' + provider + '"].reseller-panel-import-domains');
+					if ($importBtn.length) {
+						$importBtn.prop('disabled', true);
+					}
 				}
 			},
 			error: function(xhr, status, error) {
@@ -61,7 +74,63 @@
 		});
 	});
 
-	// Form validation
+	// Import domains button handler
+	$('.reseller-panel-import-domains').on('click', function(e) {
+		e.preventDefault();
+
+		var $btn = $(this);
+		var $message = $btn.siblings('.reseller-panel-import-message');
+		var originalText = $btn.text();
+		var provider = $btn.data('provider');
+		var nonce = $('[name="_wpnonce"]').val();
+
+		console.log('Import domains clicked for provider:', provider);
+		console.log('Nonce value:', nonce);
+
+		$btn.prop('disabled', true).text('Importing...');
+		$message.hide().removeClass('success error');
+
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'reseller_panel_import_domains',
+				provider: provider,
+				_wpnonce: nonce
+			},
+			success: function(response) {
+				console.log('Import AJAX success response:', response);
+				console.log('Import response data:', response.data);
+				
+				if (response.success) {
+					var message = response.data.message || 'Domains imported successfully!';
+					$message.addClass('success').text('✓ ' + message).show();
+					$btn.removeClass('button-secondary').addClass('button-success');
+					console.log('Import summary:', response.data.summary);
+					console.log('Import details:', response.data.details);
+				} else {
+					var errorMessage = response.data.message || 'Domain import failed';
+					console.log('Import error details:', response.data);
+					$message.addClass('error').text('✗ ' + errorMessage).show();
+					$btn.removeClass('button-success').addClass('button-secondary');
+				}
+			},
+			error: function(xhr, status, error) {
+				console.log('Import AJAX error:', xhr, status, error);
+				console.log('Import response text:', xhr.responseText);
+				try {
+					var errorResponse = JSON.parse(xhr.responseText);
+					console.log('Parsed import error response:', errorResponse);
+				} catch(e) {
+					console.log('Could not parse import error response');
+				}
+				$message.addClass('error').text('✗ Error importing domains: ' + status).show();
+			},
+			complete: function() {
+				$btn.prop('disabled', false).text(originalText);
+			}
+		});
+	});
 	$('.reseller-panel-form-container form').on('submit', function(e) {
 		var $form = $(this);
 		var hasErrors = false;
