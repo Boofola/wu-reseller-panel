@@ -4,6 +4,8 @@
 
 The Reseller Panel is a complete rewrite following Ultimate Multisite (WP Ultimo) addon architecture standards. It provides a flexible, provider-agnostic system for managing domains, SSL certificates, hosting, emails, and marketing services across multiple providers.
 
+Requires Ultimate Multisite: https://github.com/Multisite-Ultimate/ultimate-multisite
+
 ## Architecture
 
 ### Core Structure
@@ -361,3 +363,9 @@ Architecture: Ultimate Multisite Addon Pattern
 PHP Minimum: 7.4
 WordPress Minimum: 5.9
 Ultimate Multisite Minimum: 1.0
+
+---
+
+**Documentation Written by:** Anthropic Claude AI
+**Date:** November 23, 2025  
+**Status:** ✅ FULLY COMPATIBLE

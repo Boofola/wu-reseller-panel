@@ -1,0 +1,26 @@
+{
+	"intelephense.stubs": [
+		"wordpress",
+		"woocommerce",
+		"wordpress-globals",
+		"wp-cli",
+		"genesis",
+		"polylang"
+	],
+	"intelephense.environment.includePaths": [
+		".phpstubs"
+	],
+	"intelephense.diagnostics.undefinedFunctions": false,
+	"intelephense.diagnostics.undefinedConstants": false,
+	"intelephense.diagnostics.undefinedTypes": false,
+	"php.suggest.basic": false,
+	"php.validate.enable": true,
+	"php.validate.run": "onType",
+	"files.exclude": {
+		"**/.phpstubs": true
+	},
+	"search.exclude": {
+		"**/.phpstubs": true
+	},
+	"terminal.integrated.suggest.enabled": true
+}

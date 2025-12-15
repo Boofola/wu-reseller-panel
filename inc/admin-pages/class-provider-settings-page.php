@@ -64,13 +64,13 @@ class Provider_Settings_Page extends Admin_Page {
 			return;
 		}
 
-		check_admin_referer( 'reseller_panel_provider_save', 'reseller_panel_provider_nonce' );
+		\check_admin_referer( 'reseller_panel_provider_save', 'reseller_panel_provider_nonce' );
 
-		if ( ! current_user_can( 'manage_network' ) ) {
-			wp_die( esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
+		if ( ! \current_user_can( 'manage_network' ) ) {
+			\wp_die( \esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
 		}
 
-		$provider_key = isset( $_POST['provider_key'] ) ? sanitize_key( $_POST['provider_key'] ) : '';
+		$provider_key = isset( $_POST['provider_key'] ) ? \sanitize_key( $_POST['provider_key'] ) : '';
 
 		if ( empty( $provider_key ) ) {
 			return;
@@ -89,7 +89,7 @@ class Provider_Settings_Page extends Admin_Page {
 
 		foreach ( $config_fields as $field_key => $field ) {
 			if ( isset( $_POST[ $field_key ] ) ) {
-				$config[ $field_key ] = sanitize_text_field( wp_unslash( $_POST[ $field_key ] ) );
+				$config[ $field_key ] = \sanitize_text_field( \wp_unslash( $_POST[ $field_key ] ) );
 			}
 		}
 
@@ -97,9 +97,9 @@ class Provider_Settings_Page extends Admin_Page {
 		$provider->save_config( $config );
 
 		// Show success message
-		add_action( 'admin_notices', function() use ( $provider ) {
+		\add_action( 'admin_notices', function() use ( $provider ) {
 			echo '<div class="notice notice-success is-dismissible"><p>';
-			echo esc_html( sprintf( __( '%s settings saved successfully!', 'ultimate-multisite' ), $provider->get_name() ) );
+			echo \esc_html( \sprintf( \__( '%s settings saved successfully!', 'ultimate-multisite' ), $provider->get_name() ) );
 			echo '</p></div>';
 		});
 	}
@@ -110,20 +110,39 @@ class Provider_Settings_Page extends Admin_Page {
 	 * @return void
 	 */
 	public function render_page() {
-		if ( ! current_user_can( 'manage_network' ) ) {
-			wp_die( esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
-		}
+		try {
+			if ( ! \current_user_can( 'manage_network' ) ) {
+				\wp_die( \esc_html__( 'Insufficient permissions', 'ultimate-multisite' ) );
+			}
 
-		// Handle form submission first
-		$this->handle_form_submission();
+			// Handle form submission first
+			$this->handle_form_submission();
 
-		$provider_manager = Provider_Manager::get_instance();
-		$providers = $provider_manager->get_all_providers();
+			$provider_manager = Provider_Manager::get_instance();
+			
+			if ( ! $provider_manager ) {
+				\error_log( 'Reseller Panel - Provider Manager is NULL' );
+				\wp_die( \esc_html__( 'Provider manager could not be initialized', 'ultimate-multisite' ) );
+			}
+			
+			$providers = $provider_manager->get_all_providers();
+			
+			if ( empty( $providers ) ) {
+				\error_log( 'Reseller Panel - No providers registered' );
+			}
 
-		$selected_provider = isset( $_GET['provider'] ) ? sanitize_key( $_GET['provider'] ) : '';
+			$selected_provider = isset( $_GET['provider'] ) ? \sanitize_key( $_GET['provider'] ) : '';
 
-		if ( ! empty( $selected_provider ) ) {
-			$selected_provider = $provider_manager->get_provider( $selected_provider );
+			if ( ! empty( $selected_provider ) ) {
+				$selected_provider = $provider_manager->get_provider( $selected_provider );
+				if ( ! $selected_provider ) {
+					\error_log( 'Reseller Panel - Provider not found: ' . $selected_provider );
+				}
+			}
+		} catch ( \Exception $e ) {
+			\error_log( 'Reseller Panel - Provider Settings Page Error: ' . $e->getMessage() );
+			\error_log( 'Reseller Panel - Stack trace: ' . $e->getTraceAsString() );
+			\wp_die( \esc_html( \sprintf( \__( 'An error occurred: %s', 'ultimate-multisite' ), $e->getMessage() ) ) );
 		}
 
 		?>

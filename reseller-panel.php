@@ -3,14 +3,14 @@
  * Plugin Name: Ultimate Multisite - Reseller Panel
  * Plugin URI: https://ultimatemultisite.com/
  * Description: Sell and manage domains, SSL certificates, hosting, and email services through Ultimate Multisite
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Ultimate Multisite Community
  * Author URI: https://ultimatemultisite.com/
  * Text Domain: ultimate-multisite
  * Domain Path: /languages
  * Network: true
- * Requires WordPress: 6.2
- * Requires PHP: 7.8
+ * Requires at least: 6.2
+ * Requires PHP: 7.4
  *
  * This plugin is an addon for Ultimate Multisite and requires it to be installed and activated.
  *
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants.
-define( 'RESELLER_PANEL_VERSION', '2.0.0' );
+define( 'RESELLER_PANEL_VERSION', '2.0.1' );
 define( 'RESELLER_PANEL_FILE', __FILE__ );
 define( 'RESELLER_PANEL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'RESELLER_PANEL_URL', plugin_dir_url( __FILE__ ) );
@@ -37,17 +37,29 @@ add_action(
 	'plugins_loaded',
 	function() {
 		if ( ! class_exists( 'WP_Ultimo\WP_Ultimo' ) ) {
-			add_action( 'admin_notices', function() {
+			add_action( 'network_admin_notices', function() {
 				?>
-				<div class="notice notice-error">
+				<div class="notice notice-warning">
 					<p>
 						<strong><?php esc_html_e( 'Ultimate Multisite - Reseller Panel', 'ultimate-multisite' ); ?></strong>
-						<?php esc_html_e( 'requires Ultimate Multisite to be installed and activated.', 'ultimate-multisite' ); ?>
+						<?php esc_html_e( 'works best with Ultimate Multisite installed and activated.', 'ultimate-multisite' ); ?>
+					</p>
+					<p>
+						<?php
+						printf(
+							/* translators: %s: Link to plugin */
+							esc_html__( 'Download Ultimate Multisite (opensource): %s', 'ultimate-multisite' ),
+							'<a href="https://wordpress.org/plugins/ultimate-multisite/" target="_blank" rel="noopener noreferrer">WordPress.org</a>'
+						);
+						?>
+					</p>
+					<p>
+						<em><?php esc_html_e( 'Note: Ultimate Multisite uses the WP_Ultimo namespace for backwards compatibility.', 'ultimate-multisite' ); ?></em>
 					</p>
 				</div>
 				<?php
 			} );
-			return;
+			// Continue loading even without Ultimate Multisite
 		}
 
 		// Load text domain
@@ -262,73 +274,8 @@ add_action( 'admin_init', function() {
 	add_action( 'wp_ajax_nopriv_reseller_panel_import_domains', $handler );
 }, 999 );
 
-/**
- * Register admin menu on network_admin_menu hook
- */
-add_action(
-	'network_admin_menu',
-	function() {
-		// Add top-level menu with icon
-		add_menu_page(
-			'Reseller Panel',
-			'Reseller Panel',
-			'manage_network',
-			'reseller-panel',
-			function() {
-				require_once RESELLER_PANEL_PATH . 'inc/class-reseller-panel.php';
-				$addon = \Reseller_Panel\Reseller_Panel::get_instance();
-				$addon->render_overview_page();
-			},
-			'dashicons-shopping-cart'
-		);
-
-		// Add Services Settings submenu
-		add_submenu_page(
-			'reseller-panel',
-			'Services Settings',
-			'Services Settings',
-			'manage_network',
-			'reseller-panel-services',
-			function() {
-				// Load all dependencies
-				require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
-				require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
-				require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
-				require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-services-settings-page.php';
-				
-				$page = \Reseller_Panel\Admin_Pages\Services_Settings_Page::get_instance();
-				$page->render_page();
-			}
-		);
-
-		// Add Provider Settings submenu
-		add_submenu_page(
-			'reseller-panel',
-			'Provider Settings',
-			'Provider Settings',
-			'manage_network',
-			'reseller-panel-providers',
-			function() {
-				// Load all dependencies
-				require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
-				require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
-				require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
-				require_once RESELLER_PANEL_PATH . 'inc/class-service-router.php';
-				require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
-				require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-provider-settings-page.php';
-				
-				$page = \Reseller_Panel\Admin_Pages\Provider_Settings_Page::get_instance();
-				$page->render_page();
-			}
-		);
-	},
-	5
-);
+// Admin menu registration is now handled by the Reseller_Panel class
+// to avoid duplicate registrations and conflicts
 
 /**
  * Enqueue admin styles and scripts
@@ -361,16 +308,20 @@ add_action(
  * Activation hook
  */
 register_activation_hook( RESELLER_PANEL_FILE, function() {
-	if ( class_exists( 'WP_Ultimo\WP_Ultimo' ) ) {
-		\Reseller_Panel\Reseller_Panel::get_instance()->activate();
-	}
+	// Load the main class first
+	require_once RESELLER_PANEL_PATH . 'inc/class-reseller-panel.php';
+	
+	// Run activation (creates database tables)
+	\Reseller_Panel\Reseller_Panel::get_instance()->activate();
 } );
 
 /**
  * Deactivation hook
  */
 register_deactivation_hook( RESELLER_PANEL_FILE, function() {
-	if ( class_exists( 'WP_Ultimo\WP_Ultimo' ) ) {
-		\Reseller_Panel\Reseller_Panel::get_instance()->deactivate();
-	}
+	// Load the main class first
+	require_once RESELLER_PANEL_PATH . 'inc/class-reseller-panel.php';
+	
+	// Run deactivation
+	\Reseller_Panel\Reseller_Panel::get_instance()->deactivate();
 } );

@@ -5,8 +5,10 @@
 (function($) {
 	'use strict';
 
-	// Test connection button handler
-	$('.reseller-panel-test-connection').on('click', function(e) {
+	// Wait for DOM ready to prevent layout forced errors
+	$(document).ready(function() {
+		// Test connection button handler
+		$('.reseller-panel-test-connection').on('click', function(e) {
 		e.preventDefault();
 
 		var $btn = $(this);
@@ -169,10 +171,11 @@
 		hasChanges = false;
 	});
 
-	$(window).on('beforeunload', function() {
-		if (hasChanges && !isSubmitting) {
-			return 'You have unsaved changes';
-		}
-	});
+		$(window).on('beforeunload', function() {
+			if (hasChanges && !isSubmitting) {
+				return 'You have unsaved changes';
+			}
+		});
+	}); // End document ready
 
 })(jQuery);

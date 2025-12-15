@@ -37,7 +37,11 @@ class Reseller_Panel {
 	private function __construct() {
 		$this->load_dependencies();
 		$this->setup_hooks();
-		$this->init_components();
+		
+		// Don't initialize components during installation
+		if ( ! defined( 'WP_INSTALLING' ) || ! WP_INSTALLING ) {
+			$this->init_components();
+		}
 	}
 
 	/**
@@ -50,7 +54,6 @@ class Reseller_Panel {
 
 		// Base classes
 		require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
-		require_once RESELLER_PANEL_PATH . 'inc/class-service-router.php';
 
 		// Providers
 		require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
@@ -101,9 +104,6 @@ class Reseller_Panel {
 	private function init_components() {
 		// Initialize provider manager
 		Provider_Manager::get_instance();
-
-		// Initialize service router
-		Service_Router::get_instance();
 
 		// Initialize admin pages
 		Admin_Pages\Services_Settings_Page::get_instance();
@@ -158,19 +158,35 @@ class Reseller_Panel {
 	 * @return void
 	 */
 	public function enqueue_admin_assets() {
-		wp_enqueue_style(
+		// Only load on reseller panel pages
+		$screen = \get_current_screen();
+		if ( ! $screen || strpos( $screen->id, 'reseller-panel' ) === false ) {
+			return;
+		}
+
+		\wp_enqueue_style(
 			'reseller-panel-admin',
 			RESELLER_PANEL_URL . 'assets/css/admin.css',
 			array(),
 			RESELLER_PANEL_VERSION
 		);
 
-		wp_enqueue_script(
+		\wp_enqueue_script(
 			'reseller-panel-admin',
 			RESELLER_PANEL_URL . 'assets/js/admin.js',
 			array( 'jquery' ),
 			RESELLER_PANEL_VERSION,
 			true
+		);
+		
+		// Localize script with AJAX URL and nonce
+		\wp_localize_script(
+			'reseller-panel-admin',
+			'resellerPanelAdmin',
+			array(
+				'ajaxUrl' => \admin_url( 'admin-ajax.php' ),
+				'nonce'   => \wp_create_nonce( 'reseller_panel_admin' ),
+			)
 		);
 	}
 
@@ -274,11 +290,15 @@ class Reseller_Panel {
 	 * @return void
 	 */
 	public function activate() {
+		\error_log( 'Reseller Panel - Activation hook called' );
+		
 		// Create database tables if needed
 		$this->create_tables();
 
 		// Set version
-		update_site_option( 'reseller_panel_version', RESELLER_PANEL_VERSION );
+		\update_site_option( 'reseller_panel_version', RESELLER_PANEL_VERSION );
+		
+		\error_log( 'Reseller Panel - Activation completed' );
 	}
 
 	/**
@@ -288,7 +308,9 @@ class Reseller_Panel {
 	 */
 	public function deactivate() {
 		// Clean up scheduled events if any
-		wp_clear_scheduled_hook( 'reseller_panel_sync_pricing' );
+		\wp_clear_scheduled_hook( 'reseller_panel_sync_pricing' );
+		
+		\error_log( 'Reseller Panel - Deactivation completed' );
 	}
 
 	/**
@@ -333,8 +355,26 @@ class Reseller_Panel {
 			UNIQUE KEY provider_key (provider_key)
 		) $charset_collate;";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta( $services_sql );
-		dbDelta( $providers_sql );
+		// Fallback logs table
+		$logs_table = $wpdb->prefix . 'reseller_panel_fallback_logs';
+		$logs_sql = "CREATE TABLE IF NOT EXISTS $logs_table (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			service_key varchar(50) NOT NULL,
+			primary_provider varchar(100) NOT NULL,
+			fallback_provider varchar(100) NOT NULL,
+			error_message text,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY service_key (service_key),
+			KEY created_at (created_at)
+		) $charset_collate;";
+
+		require_once \ABSPATH . 'wp-admin/includes/upgrade.php';
+		\dbDelta( $services_sql );
+		\dbDelta( $providers_sql );
+		\dbDelta( $logs_sql );
+		
+		// Log table creation for debugging
+		\error_log( 'Reseller Panel - Database tables created/verified' );
 	}
 }

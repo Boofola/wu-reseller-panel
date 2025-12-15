@@ -55,8 +55,21 @@ class Provider_Manager {
 	 * @return void
 	 */
 	private function register_default_providers() {
-		$this->register_provider( new OpenSRS_Provider() );
-		$this->register_provider( new NameCheap_Provider() );
+		try {
+			if ( class_exists( 'Reseller_Panel\Providers\OpenSRS_Provider' ) ) {
+				$this->register_provider( new OpenSRS_Provider() );
+			} else {
+				\error_log( 'Reseller Panel - OpenSRS_Provider class not found' );
+			}
+			
+			if ( class_exists( 'Reseller_Panel\Providers\NameCheap_Provider' ) ) {
+				$this->register_provider( new NameCheap_Provider() );
+			} else {
+				\error_log( 'Reseller Panel - NameCheap_Provider class not found' );
+			}
+		} catch ( \Exception $e ) {
+			\error_log( 'Reseller Panel - Error registering providers: ' . $e->getMessage() );
+		}
 	}
 
 	/**
