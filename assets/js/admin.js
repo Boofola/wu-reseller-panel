@@ -166,16 +166,23 @@
 		hasChanges = true;
 	});
 
+	// Handle both form submission via submit button and the submit event
 	$('.reseller-panel-form-container form').on('submit', function() {
 		isSubmitting = true;
 		hasChanges = false;
 	});
 
-		$(window).on('beforeunload', function() {
-			if (hasChanges && !isSubmitting) {
-				return 'You have unsaved changes';
-			}
-		});
+	// Also handle when submit button is clicked directly
+	$('.reseller-panel-form-container input[type="submit"], .reseller-panel-form-container button[type="submit"]').on('click', function() {
+		isSubmitting = true;
+		hasChanges = false;
+	});
+
+	$(window).on('beforeunload', function() {
+		if (hasChanges && !isSubmitting) {
+			return 'You have unsaved changes';
+		}
+	});
 	}); // End document ready
 
 })(jQuery);

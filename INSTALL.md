@@ -1,4 +1,4 @@
-INSTALL AND SETUP — wu-domain-manager (Domain Manager for Ultimate Multisite)
+INSTALL AND SETUP — wu-reseller-manager (Reseller Manager for Ultimate Multisite)
 
 Overview
 This document explains how to install, configure, and operate the Domain Manager plugin that supports OpenSRS and NameCheap providers.

@@ -62,23 +62,21 @@ if ( ! current_user_can( 'manage_network' ) ) {
 			<td class="success">✓</td>
 			<td><?php echo phpversion(); ?> (Required: 7.8+)</td>
 		</tr>
-		<tr>
-			<td>Ultimate Multisite Plugin</td>
-			<td class="<?php echo class_exists( 'WP_Ultimo\WP_Ultimo' ) ? 'success' : 'warning'; ?>">
-				<?php echo class_exists( 'WP_Ultimo\WP_Ultimo' ) ? '✓' : '⚠'; ?>
-			</td>
-			<td><?php 
-				if ( class_exists( 'WP_Ultimo\WP_Ultimo' ) ) {
-					$version = defined( 'WP_ULTIMO_VERSION' ) ? WP_ULTIMO_VERSION : 'unknown';
-					echo 'Found (v' . esc_html( $version ) . ') - <strong style="color: #46b450;">Active</strong>';
-				} else {
-					echo 'NOT FOUND - Recommended for full functionality.<br><strong>Download Ultimate Multisite (opensource):</strong> <a href="https://wordpress.org/plugins/ultimate-multisite/" target="_blank" rel="noopener noreferrer">WordPress.org</a>';
-				}
-			?></td>
-		</tr>
-	</table>
-
-	<h2>2. Plugin Files</h2>
+	<tr>
+		<td>Ultimate Multisite Plugin</td>
+		<td class="<?php echo reseller_panel_is_ultimo_active() ? 'success' : 'warning'; ?>">
+			<?php echo reseller_panel_is_ultimo_active() ? '✓' : '⚠'; ?>
+		</td>
+		<td><?php 
+			if ( reseller_panel_is_ultimo_active() ) {
+				$version = defined( 'WP_ULTIMO_VERSION' ) ? WP_ULTIMO_VERSION : 'unknown';
+				echo 'Found (v' . esc_html( $version ) . ') - <strong style="color: #46b450;">Active</strong>';
+			} else {
+				echo 'NOT FOUND - Recommended for full functionality.<br><strong>Download Ultimate Multisite (opensource):</strong> <a href="https://wordpress.org/plugins/ultimate-multisite/" target="_blank" rel="noopener noreferrer">WordPress.org</a>';
+			}
+		?></td>
+	</tr>
+</table>	<h2>2. Plugin Files</h2>
 	<table>
 		<tr>
 			<th>File</th>

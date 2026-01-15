@@ -33,10 +33,36 @@ define( 'RESELLER_PANEL_BASENAME', plugin_basename( __FILE__ ) );
 /**
  * Check if Ultimate Multisite is active and loaded
  */
+function reseller_panel_is_ultimo_active() {
+	if ( ! is_multisite() ) {
+		return false;
+	}
+
+	// Check if plugin file exists and is active
+	if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+
+	// Check both possible plugin paths
+	$plugin_paths = array(
+		'ultimate-multisite/ultimate-multisite.php',
+		'wp-ultimo/wp-ultimo.php',
+	);
+
+	foreach ( $plugin_paths as $plugin_path ) {
+		if ( is_plugin_active_for_network( $plugin_path ) ) {
+			return true;
+		}
+	}
+
+	// Fallback to class check
+	return class_exists( 'WP_Ultimo\WP_Ultimo' );
+}
+
 add_action(
 	'plugins_loaded',
 	function() {
-		if ( ! class_exists( 'WP_Ultimo\WP_Ultimo' ) ) {
+		if ( ! reseller_panel_is_ultimo_active() ) {
 			add_action( 'network_admin_notices', function() {
 				?>
 				<div class="notice notice-warning">
