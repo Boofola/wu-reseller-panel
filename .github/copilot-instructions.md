@@ -53,7 +53,14 @@ reseller-panel.php                    # Main plugin file with constants and boot
 ### PHP Standards
 
 1. **Follow WordPress Coding Standards**: Use WordPress PHP Coding Standards for all PHP code
-2. **Namespace**: All classes use the `Reseller_Panel` namespace
+2. **Namespace**: Use organized sub-namespaces under `Reseller_Panel`:
+   - Core classes: `namespace Reseller_Panel;`
+   - Providers: `namespace Reseller_Panel\Providers;`
+   - Admin pages: `namespace Reseller_Panel\Admin_Pages;`
+   - Interfaces: `namespace Reseller_Panel\Interfaces;`
+   - Abstract classes: `namespace Reseller_Panel\Abstract_Classes;`
+   - Product types: `namespace Reseller_Panel\Product_Types;`
+   - Importers: `namespace Reseller_Panel\Importers;`
 3. **File Naming**: 
    - Class files: `class-{classname-in-kebab-case}.php`
    - Interface files: `class-{interface-name}-interface.php`
@@ -232,7 +239,7 @@ add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 3. **Check Dependencies**: Ensure Ultimate Multisite compatibility
 4. **Update Documentation**: Update relevant .md files if architecture changes
 5. **Follow Patterns**: Match existing code patterns and conventions
-6. **Namespace**: Always use `namespace Reseller_Panel;`
+6. **Namespace**: Use appropriate sub-namespaces (e.g., `Reseller_Panel\Providers`, `Reseller_Panel\Admin_Pages`)
 7. **Security**: Never commit API credentials or sensitive data
 8. **Backwards Compatibility**: Maintain compatibility with WordPress 6.2+ and PHP 7.4+
 
