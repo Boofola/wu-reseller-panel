@@ -79,8 +79,10 @@ class Reseller_Panel {
 		// Register admin pages - only on network admin menu for multisite
 		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 
-		// Add admin notice for non-multisite installations
-		add_action( 'admin_notices', array( $this, 'show_multisite_required_notice' ) );
+		// Add admin notice for non-multisite installations - only if not multisite
+		if ( ! is_multisite() ) {
+			add_action( 'admin_notices', array( $this, 'show_multisite_required_notice' ) );
+		}
 
 		// Load admin styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -118,13 +120,8 @@ class Reseller_Panel {
 	 * @return void
 	 */
 	public function show_multisite_required_notice() {
-		// Only show notice if not multisite
-		if ( is_multisite() ) {
-			return;
-		}
-
-		// Only show to users who can activate plugins
-		if ( ! current_user_can( 'activate_plugins' ) ) {
+		// Only show to users who can manage options
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
