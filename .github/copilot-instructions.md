@@ -98,14 +98,22 @@ reseller-panel.php                    # Main plugin file with constants and boot
 
 ### Testing & Validation
 
-**PHP Syntax Checking**:
+**PHP Syntax Checking (Cross-platform)**:
 ```bash
-# Check all PHP files for syntax errors
+# Check single file
 php -l reseller-panel.php
-Get-ChildItem -Path . -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 
-# Or use the PowerShell helper script
+# Check all PHP files (Unix/Linux/Mac)
+find . -name "*.php" -exec php -l {} \;
+```
+
+**PowerShell Helper (Windows)**:
+```powershell
+# Use the PowerShell helper script
 .\dev-check.ps1
+
+# Or manually check all PHP files
+Get-ChildItem -Path . -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
 **No automated tests currently exist** - manual testing required in a WordPress Multisite environment.
@@ -213,6 +221,8 @@ add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 ## Text Domain & Internationalization
 
 - **Text Domain**: `ultimate-multisite`
+  - **Note**: This plugin uses the parent Ultimate Multisite text domain for consistency across the addon ecosystem
+  - All translations are centralized in the parent plugin's language files
 - **Function**: Use `__()`, `esc_html__()`, `esc_attr__()` for all user-facing strings
 - **Domain Path**: `/languages`
 
