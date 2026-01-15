@@ -76,9 +76,11 @@ class Reseller_Panel {
 	 * Setup WordPress hooks
 	 */
 	private function setup_hooks() {
-		// Register admin pages - both hooks to ensure it fires
+		// Register admin pages - only on network admin menu for multisite
 		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
-		add_action( 'admin_menu', array( $this, 'register_admin_pages' ), 10 );
+
+		// Add admin notice for non-multisite installations
+		add_action( 'admin_notices', array( $this, 'show_multisite_required_notice' ) );
 
 		// Load admin styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -111,11 +113,49 @@ class Reseller_Panel {
 	}
 
 	/**
+	 * Show multisite required notice
+	 *
+	 * @return void
+	 */
+	public function show_multisite_required_notice() {
+		// Only show notice if not multisite
+		if ( is_multisite() ) {
+			return;
+		}
+
+		// Only show to users who can activate plugins
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+
+		?>
+		<div class="notice notice-error">
+			<p>
+				<strong><?php esc_html_e( 'Ultimate Multisite - Reseller Panel', 'ultimate-multisite' ); ?></strong>
+			</p>
+			<p>
+				<?php esc_html_e( 'This plugin requires WordPress Multisite to function. Please activate WordPress Multisite before using this plugin.', 'ultimate-multisite' ); ?>
+			</p>
+			<p>
+				<a href="https://wordpress.org/documentation/article/create-a-network/" target="_blank" rel="noopener noreferrer">
+					<?php esc_html_e( 'Learn how to enable WordPress Multisite', 'ultimate-multisite' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Register admin pages and main menu
 	 *
 	 * @return void
 	 */
 	public function register_admin_pages() {
+		// Only register menu in multisite network admin
+		if ( ! is_multisite() ) {
+			return;
+		}
+
 		// Register main Reseller Panel menu as top-level menu
 		add_menu_page(
 			__( 'Reseller Panel', 'ultimate-multisite' ),
