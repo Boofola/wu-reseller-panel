@@ -134,7 +134,7 @@ class Reseller_Panel {
 				<?php esc_html_e( 'This plugin requires WordPress Multisite to function. Please activate WordPress Multisite before using this plugin.', 'ultimate-multisite' ); ?>
 			</p>
 			<p>
-				<a href="https://wordpress.org/documentation/article/create-a-network/" target="_blank" rel="noopener noreferrer">
+				<a href="<?php echo esc_url( 'https://wordpress.org/documentation/article/create-a-network/' ); ?>" target="_blank" rel="noopener noreferrer">
 					<?php esc_html_e( 'Learn how to enable WordPress Multisite', 'ultimate-multisite' ); ?>
 				</a>
 			</p>
