@@ -221,7 +221,7 @@ add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 ## Text Domain & Internationalization
 
 - **Text Domain**: `ultimate-multisite`
-  - **Note**: This plugin uses the parent Ultimate Multisite text domain for consistency across the addon ecosystem
+  - **Note**: This plugin uses the parent Ultimate Multisite text domain, for consistency across the addon ecosystem
   - All translations are centralized in the parent plugin's language files
 - **Function**: Use `__()`, `esc_html__()`, `esc_attr__()` for all user-facing strings
 - **Domain Path**: `/languages`
@@ -255,8 +255,8 @@ add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 
 ## Prohibited Actions
 
-- Do not remove the Ultimate Multisite dependency check
-- Do not change the plugin text domain
-- Do not modify database table names without migration
-- Do not remove security checks (nonce verification, capability checks, escaping)
-- Do not add dependencies that conflict with WordPress or Ultimate Multisite
+- Do not remove the Ultimate Multisite dependency check (required for plugin to function)
+- Do not change the plugin text domain (maintains translation consistency with parent plugin)
+- Do not modify database table names without migration (prevents data loss)
+- Do not remove security checks (nonce verification, capability checks, escaping - prevents vulnerabilities)
+- Do not add dependencies that conflict with WordPress or Ultimate Multisite (maintains compatibility)
