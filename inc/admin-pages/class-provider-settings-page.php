@@ -94,7 +94,12 @@ class Provider_Settings_Page extends Admin_Page {
 		}
 
 		// Save configuration
-		$provider->save_config( $config );
+		if ( method_exists( $provider, 'save_config' ) ) {
+			$provider->save_config( $config );
+		} else {
+			// Fallback: Save directly to options
+			\update_option( 'reseller_panel_provider_' . $provider_key, $config );
+		}
 
 		// Show success message
 		\add_action( 'admin_notices', function() use ( $provider ) {
@@ -146,27 +151,27 @@ class Provider_Settings_Page extends Admin_Page {
 		}
 
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( $this->page_title ); ?></h1>
+<div class="wrap">
+    <h1><?php echo esc_html( $this->page_title ); ?></h1>
 
-			<div class="reseller-panel-providers-tabs">
-				<?php foreach ( $providers as $provider ) : ?>
-					<a href="<?php echo esc_url( add_query_arg( 'provider', $provider->get_key() ) ); ?>" 
-					   class="nav-tab <?php echo $selected_provider && $selected_provider->get_key() === $provider->get_key() ? 'nav-tab-active' : ''; ?>">
-						<?php echo esc_html( $provider->get_name() ); ?>
-					</a>
-				<?php endforeach; ?>
-			</div>
+    <div class="reseller-panel-providers-tabs">
+        <?php foreach ( $providers as $provider ) : ?>
+        <a href="<?php echo esc_url( add_query_arg( 'provider', $provider->get_key() ) ); ?>"
+            class="nav-tab <?php echo $selected_provider && $selected_provider->get_key() === $provider->get_key() ? 'nav-tab-active' : ''; ?>">
+            <?php echo esc_html( $provider->get_name() ); ?>
+        </a>
+        <?php endforeach; ?>
+    </div>
 
-			<?php if ( $selected_provider ) : ?>
-				<?php $this->render_provider_form( $selected_provider ); ?>
-			<?php else : ?>
-				<div class="notice notice-info">
-					<p><?php esc_html_e( 'Please select a provider to configure.', 'ultimate-multisite' ); ?></p>
-				</div>
-			<?php endif; ?>
-		</div>
-		<?php
+    <?php if ( $selected_provider ) : ?>
+    <?php $this->render_provider_form( $selected_provider ); ?>
+    <?php else : ?>
+    <div class="notice notice-info">
+        <p><?php esc_html_e( 'Please select a provider to configure.', 'ultimate-multisite' ); ?></p>
+    </div>
+    <?php endif; ?>
+</div>
+<?php
 	}
 
 	/**
@@ -187,79 +192,82 @@ class Provider_Settings_Page extends Admin_Page {
 		}
 
 		?>
-		<form method="post" action="<?php echo esc_url( $action_url ); ?>">
-			<?php $this->render_nonce_field( 'reseller_panel_provider_save', 'reseller_panel_provider_nonce' ); ?>
+<form method="post" action="<?php echo esc_url( $action_url ); ?>">
+    <?php $this->render_nonce_field( 'reseller_panel_provider_save', 'reseller_panel_provider_nonce' ); ?>
 
-			<input type="hidden" name="provider_key" value="<?php echo esc_attr( $provider->get_key() ); ?>" />
+    <input type="hidden" name="provider_key" value="<?php echo esc_attr( $provider->get_key() ); ?>" />
 
-			<div class="reseller-panel-form-container">
-				<h2><?php echo esc_html( $provider->get_name() ); ?></h2>
+    <div class="reseller-panel-form-container">
+        <h2><?php echo esc_html( $provider->get_name() ); ?></h2>
 
-				<?php foreach ( $config_fields as $field_key => $field ) : ?>
-					<?php
+        <?php foreach ( $config_fields as $field_key => $field ) : ?>
+        <?php
 						$value = '';
 						if ( method_exists( $provider, 'get_config_value' ) ) {
 							$value = $provider->get_config_value( $field_key, '' );
 						}
 					?>
-					<div class="reseller-panel-form-group">
-						<label for="<?php echo esc_attr( $field_key ); ?>">
-							<?php echo esc_html( $field['label'] ?? $field_key ); ?>
-						</label>
+        <div class="reseller-panel-form-group">
+            <label for="<?php echo esc_attr( $field_key ); ?>">
+                <?php echo esc_html( $field['label'] ?? $field_key ); ?>
+            </label>
 
-						<?php if ( 'select' === ( $field['type'] ?? 'text' ) ) : ?>
-							<select id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>">
-								<?php if ( isset( $field['options'] ) ) : ?>
-									<?php foreach ( $field['options'] as $opt_val => $opt_label ) : ?>
-										<option value="<?php echo esc_attr( $opt_val ); ?>" <?php selected( $value, $opt_val ); ?>>
-											<?php echo esc_html( $opt_label ); ?>
-										</option>
-									<?php endforeach; ?>
-								<?php endif; ?>
-							</select>
+            <?php if ( 'select' === ( $field['type'] ?? 'text' ) ) : ?>
+            <select id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>">
+                <?php if ( isset( $field['options'] ) ) : ?>
+                <?php foreach ( $field['options'] as $opt_val => $opt_label ) : ?>
+                <option value="<?php echo esc_attr( $opt_val ); ?>" <?php selected( $value, $opt_val ); ?>>
+                    <?php echo esc_html( $opt_label ); ?>
+                </option>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
 
-						<?php elseif ( 'textarea' === ( $field['type'] ?? 'text' ) ) : ?>
-							<textarea id="<?php echo esc_attr( $field_key ); ?>" name="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_textarea( $value ); ?></textarea>
+            <?php elseif ( 'textarea' === ( $field['type'] ?? 'text' ) ) : ?>
+            <textarea id="<?php echo esc_attr( $field_key ); ?>"
+                name="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_textarea( $value ); ?></textarea>
 
-						<?php else : ?>
-							<input type="<?php echo esc_attr( $field['type'] ?? 'text' ); ?>" 
-							       id="<?php echo esc_attr( $field_key ); ?>" 
-							       name="<?php echo esc_attr( $field_key ); ?>" 
-							       value="<?php echo esc_attr( $value ); ?>" />
-						<?php endif; ?>
+            <?php else : ?>
+            <input type="<?php echo esc_attr( $field['type'] ?? 'text' ); ?>" id="<?php echo esc_attr( $field_key ); ?>"
+                name="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+            <?php endif; ?>
 
-						<?php if ( ! empty( $field['description'] ?? '' ) ) : ?>
-							<p class="description">
-								<?php echo wp_kses_post( $field['description'] ); ?>
-								<?php if ( isset( $field['link'] ) ) : ?>
-									<br/>
-									<a href="<?php echo esc_url( $field['link'] ); ?>" target="_blank" rel="noopener noreferrer">
-										<?php echo esc_html( $field['link_text'] ?? $field['link'] ); ?>
-									</a>
-								<?php endif; ?>
-							</p>
-						<?php endif; ?>
-					</div>
-				<?php endforeach; ?>
+            <?php if ( ! empty( $field['description'] ?? '' ) ) : ?>
+            <p class="description">
+                <?php echo wp_kses_post( $field['description'] ); ?>
+                <?php if ( isset( $field['link'] ) ) : ?>
+                <br />
+                <a href="<?php echo esc_url( $field['link'] ); ?>" target="_blank" rel="noopener noreferrer">
+                    <?php echo esc_html( $field['link_text'] ?? $field['link'] ); ?>
+                </a>
+                <?php endif; ?>
+            </p>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
 
-				<p class="submit">
-					<?php submit_button( sprintf( __( 'Save %s Settings', 'ultimate-multisite' ), $provider->get_name() ), 'primary large', 'submit', true ); ?>
-					<button type="button" class="button button-secondary reseller-panel-test-connection" data-provider="<?php echo esc_attr( $provider->get_key() ); ?>">
-						<?php esc_html_e( 'Test Connection', 'ultimate-multisite' ); ?>
-					</button>
-					<span class="reseller-panel-test-message" style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
-					
-					<?php if ( $provider->supports_service( 'domains' ) ) : ?>
-						<button type="button" class="button button-secondary reseller-panel-import-domains" data-provider="<?php echo esc_attr( $provider->get_key() ); ?>" disabled>
-							<?php esc_html_e( 'Import Domains', 'ultimate-multisite' ); ?>
-						</button>
-						<span class="reseller-panel-import-message" style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
-					<?php endif; ?>
-					
-					<?php wp_nonce_field( 'reseller_panel_provider_nonce', '_wpnonce', false ); ?>
-				</p>
-			</div>
-		</form>
-		<?php
+        <p class="submit">
+            <?php submit_button( sprintf( __( 'Save %s Settings', 'ultimate-multisite' ), $provider->get_name() ), 'primary large', 'submit', true ); ?>
+            <button type="button" class="button button-secondary reseller-panel-test-connection"
+                data-provider="<?php echo esc_attr( $provider->get_key() ); ?>">
+                <?php esc_html_e( 'Test Connection', 'ultimate-multisite' ); ?>
+            </button>
+            <span class="reseller-panel-test-message"
+                style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
+
+            <?php if ( $provider->supports_service( 'domains' ) ) : ?>
+            <button type="button" class="button button-secondary reseller-panel-import-domains"
+                data-provider="<?php echo esc_attr( $provider->get_key() ); ?>" disabled>
+                <?php esc_html_e( 'Import Domains', 'ultimate-multisite' ); ?>
+            </button>
+            <span class="reseller-panel-import-message"
+                style="display: none; margin-left: 10px; font-weight: bold; vertical-align: middle;"></span>
+            <?php endif; ?>
+
+            <?php wp_nonce_field( 'reseller_panel_provider_nonce', '_wpnonce', false ); ?>
+        </p>
+    </div>
+</form>
+<?php
 	}
 }
