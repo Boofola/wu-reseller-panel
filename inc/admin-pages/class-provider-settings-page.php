@@ -292,9 +292,9 @@ class Provider_Settings_Page extends Admin_Page {
 				</p>
 
 				<!-- Error Details Section -->
-				<div id="reseller-panel-error-details" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
-					<h3 style="margin-top: 0; color: #856404;"><?php esc_html_e( 'Connection Error Details', 'ultimate-multisite' ); ?></h3>
-					<div id="reseller-panel-error-content" style="font-family: monospace; white-space: pre-wrap; background: #fff; padding: 10px; border-radius: 3px; max-height: 300px; overflow-y: auto;"></div>
+				<div id="reseller-panel-error-details" class="reseller-panel-error-details" style="display: none;">
+					<h3><?php esc_html_e( 'Connection Error Details', 'ultimate-multisite' ); ?></h3>
+					<div id="reseller-panel-error-content" class="reseller-panel-error-content"></div>
 					<p class="description" style="margin-top: 10px;">
 						<?php esc_html_e( 'Please verify your API credentials and ensure your server IP is whitelisted (if required by the provider). If the issue persists, contact the provider\'s support with the error code above.', 'ultimate-multisite' ); ?>
 					</p>

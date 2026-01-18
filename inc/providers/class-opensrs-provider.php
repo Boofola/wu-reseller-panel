@@ -161,8 +161,8 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		// Build XML request
 		$xml = $this->build_xml_request( $object, $action, $attributes, $username, $api_key );
 
-		// Build authentication headers
-		$signature = md5( md5( $xml . $api_key ) . $api_key );
+		// Calculate signature for authentication
+		$signature = $this->calculate_signature( $xml, $api_key );
 		
 		// Make HTTP request
 		$response = wp_remote_post(
@@ -186,6 +186,18 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		$body = wp_remote_retrieve_body( $response );
 
 		return $this->parse_xml_response( $body );
+	}
+
+	/**
+	 * Calculate signature for OpenSRS authentication
+	 *
+	 * @param string $xml XML request body
+	 * @param string $api_key API key
+	 *
+	 * @return string MD5 signature
+	 */
+	private function calculate_signature( $xml, $api_key ) {
+		return md5( md5( $xml . $api_key ) . $api_key );
 	}
 
 	/**
