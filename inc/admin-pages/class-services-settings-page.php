@@ -118,10 +118,31 @@ class Services_Settings_Page extends Admin_Page {
 
 		$provider_manager = Provider_Manager::get_instance();
 		$all_providers = $provider_manager->get_all_providers();
+		$configured_providers = $provider_manager->get_configured_providers();
 
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( $this->page_title ); ?></h1>
+
+			<?php if ( empty( $configured_providers ) ) : ?>
+				<div class="notice notice-warning">
+					<p>
+						<strong><?php esc_html_e( 'No Providers Configured', 'ultimate-multisite' ); ?></strong>
+					</p>
+					<p>
+						<?php
+						printf(
+							/* translators: %s: link to provider settings page */
+							esc_html__( 'You need to first configure some providers in %s before they will be available to configure here.', 'ultimate-multisite' ),
+							'<a href="' . esc_url( network_admin_url( 'admin.php?page=reseller-panel-providers' ) ) . '">' . esc_html__( 'Provider Settings', 'ultimate-multisite' ) . '</a>'
+						);
+						?>
+					</p>
+					<p>
+						<?php esc_html_e( 'After configuring at least one provider and testing the connection, return to this page to enable and configure services.', 'ultimate-multisite' ); ?>
+					</p>
+				</div>
+			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( network_admin_url( 'admin.php?page=reseller-panel-services' ) ); ?>">
 				<?php $this->render_nonce_field( 'reseller_panel_services_save', 'reseller_panel_services_nonce' ); ?>

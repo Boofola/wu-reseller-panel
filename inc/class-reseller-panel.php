@@ -75,6 +75,14 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-provider-settings-page
 /**
 	 * Setup WordPress hooks
 	 */
+	private function setup_hooks() {
+		// Register admin pages - only on network admin menu for multisite
+		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
+
+		// Add admin notice for non-multisite installations - only if not multisite
+		if ( ! is_multisite() ) {
+			add_action( 'admin_notices', array( $this, 'show_multisite_required_notice' ) );
+		}
 private function setup_hooks() {
 		// Register admin pages - both hooks to ensure it fires
 		// Register admin pages - only on network admin menu for multisite
@@ -118,6 +126,77 @@ Admin_Pages\Provider_Settings_Page::get_instance();
 
 	/**
 	 * Show multisite required notice
+	 *
+	 * @return void
+	 */
+	public function show_multisite_required_notice() {
+		// Only show to users who can manage options
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		?>
+		<div class="notice notice-error">
+			<p>
+				<strong><?php esc_html_e( 'Ultimate Multisite - Reseller Panel', 'ultimate-multisite' ); ?></strong>
+			</p>
+			<p>
+				<?php esc_html_e( 'This plugin requires WordPress Multisite to function. Please activate WordPress Multisite before using this plugin.', 'ultimate-multisite' ); ?>
+			</p>
+			<p>
+				<a href="<?php echo esc_url( 'https://wordpress.org/documentation/article/create-a-network/' ); ?>" target="_blank" rel="noopener noreferrer">
+					<?php esc_html_e( 'Learn how to enable WordPress Multisite', 'ultimate-multisite' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Register admin pages and main menu
+	 *
+	 * @return void
+	 */
+	public function register_admin_pages() {
+		// Only register menu in multisite network admin
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		// Register main Reseller Panel menu as top-level menu
+		add_menu_page(
+			__( 'Reseller Panel', 'ultimate-multisite' ),
+			__( 'Reseller Panel', 'ultimate-multisite' ),
+			'manage_network',
+			'reseller-panel',
+			array( $this, 'render_overview_page' ),
+			'dashicons-shopping-cart',
+			25  // Position below Ultimate Multisite menu
+		);
+
+		// Initialize admin page instances first
+		$services_page = Admin_Pages\Services_Settings_Page::get_instance();
+		$provider_page = Admin_Pages\Provider_Settings_Page::get_instance();
+
+		// Register Services Settings as submenu
+		add_submenu_page(
+			'reseller-panel',
+			__( 'Services Settings', 'ultimate-multisite' ),
+			__( 'Services Settings', 'ultimate-multisite' ),
+			'manage_network',
+			'reseller-panel-services',
+			array( $services_page, 'render_page' )
+		);
+
+		// Register Provider Settings as submenu
+		add_submenu_page(
+			'reseller-panel',
+			__( 'Provider Settings', 'ultimate-multisite' ),
+			__( 'Provider Settings', 'ultimate-multisite' ),
+			'manage_network',
+			'reseller-panel-providers',
+			array( $provider_page, 'render_page' )
+		);
 	 *
 	 * @return void
 	 */

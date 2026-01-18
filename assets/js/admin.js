@@ -40,6 +40,9 @@
 					$message.addClass('success').text('✓ ' + message).show();
 					$btn.removeClass('button-secondary').addClass('button-success');
 					
+					// Hide error details section
+					$('#reseller-panel-error-details').hide();
+					
 					// Enable import button for this provider
 					var $importBtn = $('[data-provider="' + provider + '"].reseller-panel-import-domains');
 					if ($importBtn.length) {
@@ -51,6 +54,22 @@
 					console.log('Debug array:', response.data.debug);
 					$message.addClass('error').text('✗ ' + errorMessage).show();
 					$btn.removeClass('button-success').addClass('button-secondary');
+					
+					// Show detailed error information
+					var errorDetails = '';
+					if (response.data.message) {
+						errorDetails += 'Error Message: ' + response.data.message + '\n\n';
+					}
+					if (response.data.debug && Array.isArray(response.data.debug)) {
+						errorDetails += 'Debug Information:\n';
+						response.data.debug.forEach(function(item, index) {
+							errorDetails += (index + 1) + '. ' + item + '\n';
+						});
+					}
+					if (errorDetails) {
+						$('#reseller-panel-error-content').text(errorDetails);
+						$('#reseller-panel-error-details').show();
+					}
 					
 					// Disable import button if test fails
 					var $importBtn = $('[data-provider="' + provider + '"].reseller-panel-import-domains');

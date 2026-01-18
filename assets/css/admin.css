@@ -393,6 +393,35 @@
 	font-weight: 600;
 }
 
+/* Error Details Section */
+.reseller-panel-error-details {
+	margin-top: 20px;
+	padding: 15px;
+	background: #fff3cd;
+	border: 1px solid #ffc107;
+	border-radius: 4px;
+}
+
+.reseller-panel-error-details h3 {
+	margin-top: 0;
+	color: #856404;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.reseller-panel-error-content {
+	font-family: 'Monaco', 'Courier New', monospace;
+	white-space: pre-wrap;
+	background: #fff;
+	padding: 10px;
+	border-radius: 3px;
+	max-height: 300px;
+	overflow-y: auto;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #333;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
 	.reseller-panel-cards-grid {
