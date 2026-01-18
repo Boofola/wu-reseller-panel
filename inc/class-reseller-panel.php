@@ -70,6 +70,7 @@ require_once RESELLER_PANEL_PATH . 'inc/importers/class-domain-importer.php';
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-services-settings-page.php';
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-provider-settings-page.php';
+require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 }
 
 /**
@@ -113,6 +114,11 @@ Provider_Manager::get_instance();
 // Initialize admin pages
 Admin_Pages\Services_Settings_Page::get_instance();
 Admin_Pages\Provider_Settings_Page::get_instance();
+
+// Initialize settings manager
+if ( class_exists( 'Reseller_Panel\Settings_Manager' ) ) {
+	Settings_Manager::get_instance()->init();
+}
 }
 
 	/**
