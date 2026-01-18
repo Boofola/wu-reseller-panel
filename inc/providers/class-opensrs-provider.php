@@ -79,29 +79,60 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 	public function test_connection() {
 		// Check if DOM extension is available first
 		if ( ! class_exists( '\\DOMDocument' ) && ! extension_loaded( 'dom' ) ) {
-			return new \WP_Error( 'missing_extension', __( 'PHP DOM extension is required but not enabled on this server', 'ultimate-multisite' ) );
+			return new \WP_Error( 
+				'missing_extension', 
+				__( 'PHP DOM extension is required but not enabled on this server. Please contact your hosting provider to enable the DOM extension.', 'ultimate-multisite' ) 
+			);
 		}
 
 		$this->load_config();
 
 		if ( ! $this->is_configured() ) {
-			return new \WP_Error( 'not_configured', __( 'OpenSRS is not configured', 'ultimate-multisite' ) );
+			return new \WP_Error( 
+				'not_configured', 
+				__( 'OpenSRS is not configured. Please enter your API credentials above and save the settings before testing the connection.', 'ultimate-multisite' ) 
+			);
 		}
 
 		try {
 			$response = $this->make_request( 'ACCOUNT', 'GET_BALANCE' );
 
 			if ( is_wp_error( $response ) ) {
-				return $response;
+				// Add more context to the error message
+				$error_message = $response->get_error_message();
+				$error_code = $response->get_error_code();
+				
+				// Provide helpful hints for common errors
+				if ( strpos( $error_message, 'cURL error' ) !== false ) {
+					$error_message .= ' - Please check your server\'s network connectivity and SSL certificate configuration.';
+				} elseif ( $error_code === 'missing_credentials' ) {
+					$error_message .= ' - Both API Key and Username are required.';
+				}
+				
+				return new \WP_Error( $error_code, $error_message );
 			}
 
 			if ( isset( $response['is_success'] ) && 1 === (int) $response['is_success'] ) {
 				return true;
 			}
 
-			return new \WP_Error( 'api_error', __( 'Connection failed', 'ultimate-multisite' ) );
+			// Extract more detailed error information from response
+			$error_text = isset( $response['response_text'] ) ? $response['response_text'] : __( 'Connection failed', 'ultimate-multisite' );
+			$error_code = isset( $response['response_code'] ) ? $response['response_code'] : '';
+			
+			if ( $error_code ) {
+				$error_text .= ' (Code: ' . $error_code . ')';
+			}
+
+			return new \WP_Error( 'api_error', $error_text );
 		} catch ( \Exception $e ) {
-			return new \WP_Error( 'exception', $e->getMessage() );
+			return new \WP_Error( 
+				'exception', 
+				sprintf( 
+					__( 'Exception occurred: %s. Please verify your API credentials and try again.', 'ultimate-multisite' ), 
+					$e->getMessage() 
+				)
+			);
 		}
 	}
 

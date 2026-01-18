@@ -98,13 +98,19 @@ class NameCheap_Provider extends Base_Service_Provider {
 	public function test_connection() {
 		// Check if DOM extension is available first
 		if ( ! class_exists( '\\DOMDocument' ) && ! extension_loaded( 'dom' ) ) {
-			return new \WP_Error( 'missing_extension', __( 'PHP DOM extension is required but not enabled on this server', 'ultimate-multisite' ) );
+			return new \WP_Error( 
+				'missing_extension', 
+				__( 'PHP DOM extension is required but not enabled on this server. Please contact your hosting provider to enable the DOM extension.', 'ultimate-multisite' ) 
+			);
 		}
 
 		$this->load_config();
 
 		if ( ! $this->is_configured() ) {
-			return new \WP_Error( 'not_configured', __( 'NameCheap is not configured', 'ultimate-multisite' ) );
+			return new \WP_Error( 
+				'not_configured', 
+				__( 'NameCheap is not configured. Please enter your API credentials above and save the settings before testing the connection.', 'ultimate-multisite' ) 
+			);
 		}
 
 		try {
@@ -114,16 +120,40 @@ class NameCheap_Provider extends Base_Service_Provider {
 			);
 
 			if ( is_wp_error( $response ) ) {
-				return $response;
+				// Add more context to the error message
+				$error_message = $response->get_error_message();
+				$error_code = $response->get_error_code();
+				
+				// Provide helpful hints for common errors
+				if ( strpos( $error_message, 'cURL error' ) !== false ) {
+					$error_message .= ' - Please check your server\'s network connectivity and SSL certificate configuration.';
+				} elseif ( $error_code === 'missing_credentials' ) {
+					$error_message .= ' - API User, API Key, and Username are all required.';
+				} elseif ( strpos( $error_message, 'Invalid request IP' ) !== false ) {
+					$error_message .= ' - Your server IP may not be whitelisted in your NameCheap account. Please add it in your NameCheap API settings.';
+				} elseif ( strpos( $error_message, 'API key is invalid' ) !== false ) {
+					$error_message .= ' - Please verify your API credentials are correct.';
+				}
+				
+				return new \WP_Error( $error_code, $error_message );
 			}
 
 			if ( isset( $response['ApiResponse']['UserGetBalanceResult']['AccountBalance'] ) ) {
 				return true;
 			}
 
-			return new \WP_Error( 'api_error', __( 'Connection failed', 'ultimate-multisite' ) );
+			return new \WP_Error( 
+				'api_error', 
+				__( 'Connection failed. The API returned an unexpected response. Please verify your credentials and try again.', 'ultimate-multisite' ) 
+			);
 		} catch ( \Exception $e ) {
-			return new \WP_Error( 'exception', $e->getMessage() );
+			return new \WP_Error( 
+				'exception', 
+				sprintf( 
+					__( 'Exception occurred: %s. Please verify your API credentials and try again.', 'ultimate-multisite' ), 
+					$e->getMessage() 
+				)
+			);
 		}
 	}
 
