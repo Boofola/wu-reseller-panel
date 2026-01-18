@@ -77,7 +77,7 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 	 * Setup WordPress hooks
 	 */
 	private function setup_hooks() {
-		// Register admin pages on both admin_menu and network_admin_menu
+		// Register admin pages - both hooks to ensure it fires
 		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 		add_action( 'admin_menu', array( $this, 'register_admin_pages' ), 10 );
 

@@ -6,7 +6,7 @@
  * @since 1.0.0
  */
 
-namespace Reseller_Panel;
+namespace Reseller_Panel\Admin_Pages;
 
 // Exit if accessed directly
 defined('ABSPATH') || exit;
@@ -21,27 +21,20 @@ class Settings_Manager {
 	/**
 	 * Singleton instance
 	 *
-	 * @var Settings_Manager|null
+	 * @var self
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance
 	 *
-	 * @return Settings_Manager
+	 * @return self
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
-	}
-
-	/**
-	 * Constructor - private for singleton
-	 */
-	private function __construct() {
-		// Constructor intentionally left empty - initialization happens in init()
 	}
 
 	/**
