@@ -130,6 +130,9 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		// Build XML request
 		$xml = $this->build_xml_request( $object, $action, $attributes, $username, $api_key );
 
+		// Build authentication headers
+		$signature = md5( md5( $xml . $api_key ) . $api_key );
+		
 		// Make HTTP request
 		$response = wp_remote_post(
 			$endpoint,
@@ -139,6 +142,8 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				'sslverify' => true,
 				'headers' => array(
 					'Content-Type' => 'text/xml',
+					'X-Username' => $username,
+					'X-Signature' => $signature,
 				),
 			)
 		);
@@ -188,16 +193,6 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 	</body>
 </OPS_envelope>
 XML;
-
-		// Calculate signature
-		$signature = md5( md5( $xml . $api_key ) . $api_key );
-
-		// Prepend authentication header
-		$auth = sprintf(
-			"X-Username: %s\r\nX-Signature: %s",
-			$username,
-			$signature
-		);
 
 		return $xml;
 	}

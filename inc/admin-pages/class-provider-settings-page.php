@@ -194,6 +194,38 @@ class Provider_Settings_Page extends Admin_Page {
 
 			<div class="reseller-panel-form-container">
 				<h2><?php echo esc_html( $provider->get_name() ); ?></h2>
+				
+				<?php
+				// Get provider-specific help link
+				$help_links = array(
+					'opensrs' => array(
+						'url' => 'https://www.tucowsdomains.com/resource-center/reseller-support/',
+						'text' => __( 'OpenSRS Reseller Support & Documentation', 'ultimate-multisite' ),
+					),
+					'namecheap' => array(
+						'url' => 'https://www.namecheap.com/support/api/intro/',
+						'text' => __( 'NameCheap API Getting Started Guide', 'ultimate-multisite' ),
+					),
+				);
+				
+				$provider_key = $provider->get_key();
+				if ( isset( $help_links[ $provider_key ] ) ) :
+				?>
+					<div class="notice notice-info inline" style="margin: 15px 0; padding: 12px;">
+						<p>
+							<strong><?php esc_html_e( 'Need Help?', 'ultimate-multisite' ); ?></strong>
+							<?php
+							printf(
+								/* translators: %1$s: provider name, %2$s: link opening tag, %3$s: link closing tag */
+								esc_html__( 'Setting up your %1$s API account? %2$sVisit the %1$s Knowledge Base%3$s for detailed setup instructions.', 'ultimate-multisite' ),
+								esc_html( $provider->get_name() ),
+								'<a href="' . esc_url( $help_links[ $provider_key ]['url'] ) . '" target="_blank" rel="noopener noreferrer">',
+								'</a>'
+							);
+							?>
+						</p>
+					</div>
+				<?php endif; ?>
 
 				<?php foreach ( $config_fields as $field_key => $field ) : ?>
 					<?php
@@ -258,6 +290,15 @@ class Provider_Settings_Page extends Admin_Page {
 					
 					<?php wp_nonce_field( 'reseller_panel_provider_nonce', '_wpnonce', false ); ?>
 				</p>
+
+				<!-- Error Details Section -->
+				<div id="reseller-panel-error-details" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+					<h3 style="margin-top: 0; color: #856404;"><?php esc_html_e( 'Connection Error Details', 'ultimate-multisite' ); ?></h3>
+					<div id="reseller-panel-error-content" style="font-family: monospace; white-space: pre-wrap; background: #fff; padding: 10px; border-radius: 3px; max-height: 300px; overflow-y: auto;"></div>
+					<p class="description" style="margin-top: 10px;">
+						<?php esc_html_e( 'Please verify your API credentials and ensure your server IP is whitelisted (if required by the provider). If the issue persists, contact the provider\'s support with the error code above.', 'ultimate-multisite' ); ?>
+					</p>
+				</div>
 			</div>
 		</form>
 		<?php
