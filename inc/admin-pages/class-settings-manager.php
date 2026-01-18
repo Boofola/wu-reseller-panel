@@ -2,11 +2,11 @@
 /**
  * Settings Manager - Handles addon settings registration.
  *
- * @package WP_Ultimo_Content_Sync
+ * @package Reseller_Panel
  * @since 1.0.0
  */
 
-namespace WP_Ultimo_Content_Sync;
+namespace Reseller_Panel;
 
 // Exit if accessed directly
 defined('ABSPATH') || exit;
@@ -18,7 +18,31 @@ defined('ABSPATH') || exit;
  */
 class Settings_Manager {
 
-	use \WP_Ultimo_Content_Sync\Traits\Singleton;
+	/**
+	 * Singleton instance
+	 *
+	 * @var Settings_Manager|null
+	 */
+	private static $instance = null;
+
+	/**
+	 * Get singleton instance
+	 *
+	 * @return Settings_Manager
+	 */
+	public static function get_instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * Constructor - private for singleton
+	 */
+	private function __construct() {
+		// Constructor intentionally left empty - initialization happens in init()
+	}
 
 	/**
 	 * Initialize the settings manager.
@@ -27,10 +51,7 @@ class Settings_Manager {
 	 * @return void
 	 */
 	public function init() {
-
 		add_action('init', [$this, 'register_settings']);
-		add_filter('wu_pre_save_settings', [$this, 'save_excluded_sites'], 10, 3);
-		add_filter('wu_get_setting', [$this, 'filter_excluded_sites_value'], 10, 4);
 	}
 
 	/**
@@ -43,244 +64,237 @@ class Settings_Manager {
 
 		// Register settings section
 		wu_register_settings_section(
-			'content_sync',
+			'reseller_panel',
 			[
-				'title' => __('Content Sync', 'ultimate-multisite-content-sync'),
-				'desc'  => __('Configure content synchronization between sites in your network.', 'ultimate-multisite-content-sync'),
-				'icon'  => 'dashicons-wu-block-default',
-				'order' => 999,
+				'title' => __('Reseller Panel', 'ultimate-multisite'),
+				'desc'  => __('Sell and manage domains, SSL certificates, hosting, and email services.', 'ultimate-multisite'),
+				'icon'  => 'dashicons-wu-globe',
+				'order' => 100,
 				'addon' => true,
 			]
 		);
 
 		// General Settings Header
 		wu_register_settings_field(
-			'content_sync',
-			'ets_header_general',
+			'reseller_panel',
+			'rp_header_general',
 			[
 				'type'  => 'header',
-				'title' => __('General Settings', 'ultimate-multisite-content-sync'),
-				'desc'  => __('Configure how content is synced between sites in your network.', 'ultimate-multisite-content-sync'),
+				'title' => __('General Settings', 'ultimate-multisite'),
+				'desc'  => __('Configure general reseller panel options.', 'ultimate-multisite'),
 			]
 		);
 
-		// Enable Media Sync
+		// Enable Reseller Panel
 		wu_register_settings_field(
-			'content_sync',
-			'ets_sync_media',
+			'reseller_panel',
+			'rp_enable',
 			[
 				'type'    => 'toggle',
-				'title'   => __('Sync Media Files', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Automatically copy images and media files used in content to target sites.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('When enabled, all media files (images, videos, etc.) referenced in content will be copied to target sites and IDs will be remapped. Disable this if you want to share media across sites.', 'ultimate-multisite-content-sync'),
-				'default' => true,
-			]
-		);
-		// Enable Dependent Sync
-		wu_register_settings_field(
-			'content_sync',
-			'ets_sync_dependencies',
-			[
-				'type'    => 'toggle',
-				'title'   => __('Sync Content Dependencies', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Automatically sync other content and objects used by the item when syncing.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('When enabled, the content being synced is scanned for shortcodes to find other content that needs to be synced.', 'ultimate-multisite-content-sync'),
+				'title'   => __('Enable Reseller Panel', 'ultimate-multisite'),
+				'desc'    => __('Enable or disable the reseller panel functionality.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, you can sell and manage domains, SSL certificates, hosting, and email services through your Ultimate Multisite platform.', 'ultimate-multisite'),
 				'default' => true,
 			]
 		);
 
-		// Conflict Resolution
+		// Default Provider
 		wu_register_settings_field(
-			'content_sync',
-			'ets_conflict_resolution',
+			'reseller_panel',
+			'rp_default_provider',
 			[
 				'type'    => 'select',
-				'title'   => __('Conflict Resolution', 'ultimate-multisite-content-sync'),
-				'desc'    => __('How to handle content that already exists on target sites.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('When content with the same name exists on a target site, choose whether to replace it with the source version or skip it.', 'ultimate-multisite-content-sync'),
+				'title'   => __('Default Provider', 'ultimate-multisite'),
+				'desc'    => __('Select the default provider for reseller services.', 'ultimate-multisite'),
+				'tooltip' => __('This provider will be used by default for all services unless a specific provider is configured for a service.', 'ultimate-multisite'),
 				'options' => [
-					'replace' => __('Replace Existing Content', 'ultimate-multisite-content-sync'),
-					'skip'    => __('Skip Existing Content', 'ultimate-multisite-content-sync'),
+					'opensrs'    => __('OpenSRS', 'ultimate-multisite'),
+					'namecheap'  => __('Namecheap', 'ultimate-multisite'),
 				],
-				'default' => 'replace',
+				'default' => 'opensrs',
+				'require' => ['rp_enable' => true],
 			]
 		);
 
-		// Clear Elementor Cache
+		// Domain Management Header
 		wu_register_settings_field(
-			'content_sync',
-			'ets_clear_cache',
-			[
-				'type'    => 'toggle',
-				'title'   => __('Clear Elementor Cache', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Automatically clear Elementor cache on target sites after syncing Elementor templates.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('Recommended to ensure Elementor templates display correctly. Only applies when syncing Elementor content.', 'ultimate-multisite-content-sync'),
-				'default' => true,
-			]
-		);
-
-		// Excluded Sites Header
-		wu_register_settings_field(
-			'content_sync',
-			'ets_header_exclusions',
+			'reseller_panel',
+			'rp_header_domains',
 			[
 				'type'  => 'header',
-				'title' => __('Site Exclusions', 'ultimate-multisite-content-sync'),
-				'desc'  => __('Manage which sites should not receive content syncs.', 'ultimate-multisite-content-sync'),
+				'title' => __('Domain Management', 'ultimate-multisite'),
+				'desc'  => __('Configure domain-related settings.', 'ultimate-multisite'),
 			]
 		);
 
-		// Excluded Sites
+		// Auto-Renewal
 		wu_register_settings_field(
-			'content_sync',
-			'ets_excluded_sites',
+			'reseller_panel',
+			'rp_domain_auto_renew',
+			[
+				'type'    => 'toggle',
+				'title'   => __('Enable Auto-Renewal by Default', 'ultimate-multisite'),
+				'desc'    => __('Automatically enable auto-renewal for new domain registrations.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, all new domain registrations will have auto-renewal enabled by default. Customers can still disable it for individual domains.', 'ultimate-multisite'),
+				'default' => true,
+				'require' => ['rp_enable' => true],
+			]
+		);
+
+		// Domain Privacy
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_domain_privacy',
+			[
+				'type'    => 'toggle',
+				'title'   => __('Enable WHOIS Privacy by Default', 'ultimate-multisite'),
+				'desc'    => __('Automatically enable WHOIS privacy protection for new domain registrations.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, domain registrant information will be hidden from public WHOIS lookups by default.', 'ultimate-multisite'),
+				'default' => true,
+				'require' => ['rp_enable' => true],
+			]
+		);
+
+		// DNS Management
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_enable_dns_management',
+			[
+				'type'    => 'toggle',
+				'title'   => __('Enable DNS Management', 'ultimate-multisite'),
+				'desc'    => __('Allow customers to manage DNS records for their domains.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, customers can add, edit, and delete DNS records through the control panel.', 'ultimate-multisite'),
+				'default' => true,
+				'require' => ['rp_enable' => true],
+			]
+		);
+
+		// Provider Settings Header
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_header_providers',
+			[
+				'type'  => 'header',
+				'title' => __('Provider Configuration', 'ultimate-multisite'),
+				'desc'  => __('Links to configure your service providers.', 'ultimate-multisite'),
+			]
+		);
+
+		// Provider Configuration Links
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_provider_links',
 			[
 				'type'    => 'html',
-				'title'   => __('Excluded Sites', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Select sites that should be excluded from content syncs.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('Content will not be synced to these sites. This is useful for custom sites that should maintain their own content.', 'ultimate-multisite-content-sync'),
-				'content' => $this->render_excluded_sites_selector(),
+				'title'   => __('Provider Settings', 'ultimate-multisite'),
+				'desc'    => __('Configure your service provider API credentials and settings.', 'ultimate-multisite'),
+				'content' => $this->render_provider_links(),
 			]
 		);
 
 		// Advanced Settings Header
 		wu_register_settings_field(
-			'content_sync',
-			'ets_header_advanced',
+			'reseller_panel',
+			'rp_header_advanced',
 			[
 				'type'  => 'header',
-				'title' => __('Advanced Settings', 'ultimate-multisite-content-sync'),
-				'desc'  => __('Advanced configuration options.', 'ultimate-multisite-content-sync'),
+				'title' => __('Advanced Settings', 'ultimate-multisite'),
+				'desc'  => __('Advanced configuration options.', 'ultimate-multisite'),
 			]
 		);
 
-		// Sync Taxonomies
+		// Enable Logging
 		wu_register_settings_field(
-			'content_sync',
-			'ets_sync_taxonomies',
+			'reseller_panel',
+			'rp_enable_logging',
 			[
 				'type'    => 'toggle',
-				'title'   => __('Sync Taxonomies', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Copy taxonomies (categories, tags, etc.) to target sites.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('Enable this to preserve content organization on target sites.', 'ultimate-multisite-content-sync'),
+				'title'   => __('Enable Detailed Logging', 'ultimate-multisite'),
+				'desc'    => __('Log reseller panel operations for debugging.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, reseller panel operations will be logged to WP Ultimo logs. Useful for troubleshooting API issues.', 'ultimate-multisite'),
+				'default' => false,
+			]
+		);
+
+		// Domain Sync Frequency
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_domain_sync_frequency',
+			[
+				'type'    => 'select',
+				'title'   => __('Domain Status Sync Frequency', 'ultimate-multisite'),
+				'desc'    => __('How often to check domain statuses with providers.', 'ultimate-multisite'),
+				'tooltip' => __('Determines how frequently domain information is synchronized from your service providers.', 'ultimate-multisite'),
+				'options' => [
+					'hourly'     => __('Hourly', 'ultimate-multisite'),
+					'twicedaily' => __('Twice Daily', 'ultimate-multisite'),
+					'daily'      => __('Daily', 'ultimate-multisite'),
+					'weekly'     => __('Weekly', 'ultimate-multisite'),
+				],
+				'default' => 'daily',
+				'require' => ['rp_enable' => true],
+			]
+		);
+
+		// Email Notifications
+		wu_register_settings_field(
+			'reseller_panel',
+			'rp_expiry_notifications',
+			[
+				'type'    => 'toggle',
+				'title'   => __('Send Domain Expiry Notifications', 'ultimate-multisite'),
+				'desc'    => __('Send email notifications to customers when domains are about to expire.', 'ultimate-multisite'),
+				'tooltip' => __('When enabled, customers will receive email notifications 30 days before their domains expire.', 'ultimate-multisite'),
 				'default' => true,
+				'require' => ['rp_enable' => true],
 			]
 		);
 
-		// Preserve Post IDs
+		// Expiry Notification Days
 		wu_register_settings_field(
-			'content_sync',
-			'ets_preserve_template_ids',
+			'reseller_panel',
+			'rp_expiry_notification_days',
 			[
-				'type'    => 'toggle',
-				'title'   => __('Attempt to Preserve Post IDs', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Try to use the same post IDs on target sites as the source site (not guaranteed).', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('This can help maintain consistency but may fail if the ID is already in use. Generally not needed.', 'ultimate-multisite-content-sync'),
-				'default' => false,
-			]
-		);
-
-		// Logging
-		wu_register_settings_field(
-			'content_sync',
-			'ets_enable_logging',
-			[
-				'type'    => 'toggle',
-				'title'   => __('Enable Detailed Logging', 'ultimate-multisite-content-sync'),
-				'desc'    => __('Log content sync operations for debugging.', 'ultimate-multisite-content-sync'),
-				'tooltip' => __('When enabled, sync operations will be logged to WP Ultimo logs. Useful for troubleshooting sync issues.', 'ultimate-multisite-content-sync'),
-				'default' => false,
+				'type'    => 'text',
+				'title'   => __('Expiry Notification Days', 'ultimate-multisite'),
+				'desc'    => __('Number of days before expiry to send notifications (default: 30).', 'ultimate-multisite'),
+				'tooltip' => __('Customers will receive notifications this many days before their domains expire.', 'ultimate-multisite'),
+				'default' => '30',
+				'require' => ['rp_enable' => true, 'rp_expiry_notifications' => true],
 			]
 		);
 	}
 
 	/**
-	 * Render the excluded sites selector HTML.
+	 * Render the provider configuration links HTML.
 	 *
 	 * @since 1.0.0
-	 * @return string HTML output for the site selector.
+	 * @return string HTML output for the provider links.
 	 */
-	public function render_excluded_sites_selector() {
-
-		$excluded_sites = function_exists('wu_get_setting') ? wu_get_setting('ets_excluded_sites', []) : [];
-		$all_sites      = function_exists('wu_get_sites') ? wu_get_sites(['number' => 9999]) : [];
-		$main_site_id   = function_exists('wu_get_main_site_id') ? wu_get_main_site_id() : 1;
-
-		// Ensure it's an array
-		if (! is_array($excluded_sites)) {
-			$excluded_sites = [];
-		}
-
+	public function render_provider_links() {
 		ob_start();
 		?>
-		<select name="wu_settings[ets_excluded_sites][]" id="ets_excluded_sites" multiple="multiple" style="width: 100%; min-height: 200px;">
-			<?php foreach ($all_sites as $site) : ?>
-				<?php
-				$site_id = $site->get_id();
-				// Skip main site
-				if ((int) $site_id === $main_site_id) {
-					continue;
-				}
-				?>
-				<option value="<?php echo esc_attr($site_id); ?>" <?php selected(in_array($site_id, $excluded_sites, true)); ?>>
-					<?php echo esc_html(sprintf('%s (%s)', $site->get_title(), $site->get_domain())); ?>
-				</option>
-			<?php endforeach; ?>
-		</select>
-		<p class="description">
-			<?php esc_html_e('Hold Ctrl (Cmd on Mac) to select multiple sites. Selected sites will be excluded from content syncs.', 'ultimate-multisite-content-sync'); ?>
-		</p>
+		<div class="wu-styling">
+			<p><?php esc_html_e('Configure your service providers to enable domain registration, SSL certificates, and other reseller services:', 'ultimate-multisite'); ?></p>
+			<ul style="list-style: disc; margin-left: 20px;">
+				<li>
+					<a href="<?php echo esc_url(network_admin_url('admin.php?page=reseller-panel-providers')); ?>">
+						<?php esc_html_e('OpenSRS Configuration', 'ultimate-multisite'); ?>
+					</a> - 
+					<?php esc_html_e('Configure OpenSRS API credentials and settings', 'ultimate-multisite'); ?>
+				</li>
+				<li>
+					<a href="<?php echo esc_url(network_admin_url('admin.php?page=reseller-panel-providers')); ?>">
+						<?php esc_html_e('Namecheap Configuration', 'ultimate-multisite'); ?>
+					</a> - 
+					<?php esc_html_e('Configure Namecheap API credentials and settings', 'ultimate-multisite'); ?>
+				</li>
+			</ul>
+			<p class="description">
+				<?php esc_html_e('Visit the Provider Settings page to configure API credentials, test connections, and manage provider-specific options.', 'ultimate-multisite'); ?>
+			</p>
+		</div>
 		<?php
 		return ob_get_clean();
-	}
-
-	/**
-	 * Save excluded sites setting.
-	 *
-	 * @since 1.0.0
-	 * @param mixed  $value The value being saved.
-	 * @param string $key The setting key.
-	 * @param array  $settings All settings being saved.
-	 * @return mixed The processed value.
-	 */
-	public function save_excluded_sites($value, $key, $settings) {
-
-		if ($key !== 'ets_excluded_sites') {
-			return $value;
-		}
-
-		// Get the value from POST data
-		if (isset($_POST['wu_settings']['ets_excluded_sites'])) {
-			$excluded_sites = array_map('intval', (array) $_POST['wu_settings']['ets_excluded_sites']);
-			return $excluded_sites;
-		}
-
-		// If not in POST, return empty array (field was cleared)
-		return [];
-	}
-
-	/**
-	 * Filter excluded sites value to ensure it's always an array.
-	 *
-	 * @since 1.0.0
-	 * @param mixed  $value The setting value.
-	 * @param string $key The setting key.
-	 * @param mixed  $default The default value.
-	 * @param array  $settings All settings.
-	 * @return mixed The filtered value.
-	 */
-	public function filter_excluded_sites_value($value, $key, $default, $settings) {
-
-		if ($key !== 'ets_excluded_sites') {
-			return $value;
-		}
-
-		// Ensure it's always an array
-		if (! is_array($value)) {
-			return [];
-		}
-
-		// Ensure all values are integers
-		return array_map('intval', $value);
 	}
 }
