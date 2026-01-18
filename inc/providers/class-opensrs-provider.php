@@ -165,6 +165,9 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		$signature = $this->calculate_signature( $xml, $api_key );
 		
 		// Make HTTP request
+		$signature = md5( md5( $xml . $api_key ) . $api_key );
+
+		// Make HTTP request with authentication headers
 		$response = wp_remote_post(
 			$endpoint,
 			array(

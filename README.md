@@ -1,6 +1,6 @@
-# wu-domain-manager — Domain Manager for Ultimate Multisite
+# wu-reseller-panel — Domain Seller and Reseller for Ultimate Multisite, with additional reselling features coming soon.
 
-This repository contains the Domain Manager plugin for Ultimate Multisite.
+This repository contains the Reseller Panel plugin for Ultimate Multisite.
 
 ## Recent changes
 - Introduced provider-agnostic layer and NameCheap support.
@@ -48,4 +48,5 @@ Generated on November 18, 2025.
 ---
 
 **Documentation Written by:** Anthropic Claude AI
+**Date:** November 23, 2025  
 **Status:** ✅ FULLY COMPATIBLE
