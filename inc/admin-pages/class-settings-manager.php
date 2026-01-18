@@ -2,11 +2,11 @@
 /**
  * Settings Manager - Handles addon settings registration.
  *
- * @package WP_Ultimo_Content_Sync
+ * @package Reseller_Panel
  * @since 1.0.0
  */
 
-namespace WP_Ultimo_Content_Sync;
+namespace Reseller_Panel\Admin_Pages;
 
 // Exit if accessed directly
 defined('ABSPATH') || exit;
@@ -18,7 +18,24 @@ defined('ABSPATH') || exit;
  */
 class Settings_Manager {
 
-	use \WP_Ultimo_Content_Sync\Traits\Singleton;
+	/**
+	 * Singleton instance
+	 *
+	 * @var self
+	 */
+	private static $instance = null;
+
+	/**
+	 * Get singleton instance
+	 *
+	 * @return self
+	 */
+	public static function get_instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
 
 	/**
 	 * Initialize the settings manager.
