@@ -77,7 +77,7 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 	 * Setup WordPress hooks
 	 */
 	private function setup_hooks() {
-		// Register admin pages - only on network admin menu for multisite
+		// Register admin pages on both admin_menu and network_admin_menu
 		add_action( 'network_admin_menu', array( $this, 'register_admin_pages' ), 10 );
 		add_action( 'admin_menu', array( $this, 'register_admin_pages' ), 10 );
 
@@ -116,7 +116,7 @@ Admin_Pages\Services_Settings_Page::get_instance();
 Admin_Pages\Provider_Settings_Page::get_instance();
 
 // Initialize settings manager
-if ( class_exists( '\Reseller_Panel\Settings_Manager' ) ) {
+if ( class_exists( 'Reseller_Panel\Settings_Manager' ) ) {
 	Settings_Manager::get_instance()->init();
 }
 }
