@@ -50,24 +50,24 @@ class NameCheap_Provider extends Base_Service_Provider {
 			'api_user' => array(
 				'label' => __( 'API User', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'Your NameCheap API user (username)', 'ultimate-multisite' ),
+				'description' => __( 'Your NameCheap API user (username).', 'ultimate-multisite' ),
 				'link' => 'https://www.namecheap.com/support/api/intro/',
 				'link_text' => __( 'API Documentation', 'ultimate-multisite' ),
 			),
 			'api_key' => array(
 				'label' => __( 'API Key', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'Your NameCheap API key', 'ultimate-multisite' ),
+				'description' => __( 'Your NameCheap API key.', 'ultimate-multisite' ),
 			),
 			'username' => array(
 				'label' => __( 'Username', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'Your NameCheap account username', 'ultimate-multisite' ),
+				'description' => __( 'Your NameCheap account username.', 'ultimate-multisite' ),
 			),
 			'client_ip' => array(
-				'label' => __( 'Client IP (Optional)', 'ultimate-multisite' ),
+				'label' => __( 'Client IP (*optional)', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'If API is restricted to specific IPs, enter your server IP', 'ultimate-multisite' ),
+				'description' => __( 'If API is restricted to specific IPs, enter your server IP address here.', 'ultimate-multisite' ),
 			),
 			'environment' => array(
 				'label' => __( 'Environment', 'ultimate-multisite' ),
@@ -77,17 +77,17 @@ class NameCheap_Provider extends Base_Service_Provider {
 					'live' => __( 'Production (Live)', 'ultimate-multisite' ),
 				),
 				'default' => 'sandbox',
-				'description' => __( 'Use Sandbox for testing, Production for live transactions', 'ultimate-multisite' ),
+				'description' => __( 'Use Sandbox for testing, Production for live transactions.', 'ultimate-multisite' ),
 			),
 			'base_domain_price' => array(
-				'label' => __( 'Base Domain Price (per year)', 'ultimate-multisite' ),
+				'label' => __( 'Base Domain Price (per year) *optional', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'Admin-defined base price for domains (can be overridden per TLD)', 'ultimate-multisite' ),
+				'description' => __( 'Admin-defined base price for domains (can be overridden per TLD) - If not defined, base NameCheap pricing will be used.', 'ultimate-multisite' ),
 			),
 			'base_ssl_price' => array(
-				'label' => __( 'Base SSL Price (per year)', 'ultimate-multisite' ),
+				'label' => __( 'Base SSL Price (per year) *optional', 'ultimate-multisite' ),
 				'type' => 'text',
-				'description' => __( 'Admin-defined base price for SSL certificates', 'ultimate-multisite' ),
+				'description' => __( 'Admin-defined base price for SSL certificates - If not defined, base NameCheap price will be used.', 'ultimate-multisite' ),
 			),
 		);
 	}
@@ -182,17 +182,22 @@ class NameCheap_Provider extends Base_Service_Provider {
 				)
 			);
 		} catch ( \Exception $e ) {
+			$error_data = array(
+				'exception_class' => get_class( $e ),
+			);
+			
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$error_data['exception_file'] = $e->getFile();
+				$error_data['exception_line'] = $e->getLine();
+			}
+			
 			return new \WP_Error( 
 				'exception', 
 				sprintf( 
 					__( 'Exception occurred: %s. Please verify your API credentials and try again.', 'ultimate-multisite' ), 
 					$e->getMessage() 
 				),
-				array(
-					'exception_class' => get_class( $e ),
-					'exception_file' => $e->getFile(),
-					'exception_line' => $e->getLine(),
-				)
+				$error_data
 			);
 		}
 	}
@@ -403,11 +408,14 @@ class NameCheap_Provider extends Base_Service_Provider {
 	}
 
 	/**
-	 * Convert XML element to array
+	 * Convert XML element to array or string
+	 *
+	 * Converts a DOMElement to an array representation. Leaf text nodes (XML_TEXT_NODE)
+	 * are returned as strings, while elements are returned as associative arrays.
 	 *
 	 * @param \DOMElement $element XML element
 	 *
-	 * @return array
+	 * @return array|string Returns string for leaf text nodes, array for elements
 	 */
 	private function xml_to_array( $element ) {
 		$result = array();

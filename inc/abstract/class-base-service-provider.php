@@ -122,8 +122,8 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 * @return bool
 	 */
 	public function is_configured() {
-		$has_config = ! empty( $this->config );
 		$has_api_key = ! empty( $this->get_config_value( 'api_key' ) );
+		$has_config = ! empty( $this->config );
 		$result = $has_config && $has_api_key;
 
 		\Reseller_Panel\Logger::log_info(

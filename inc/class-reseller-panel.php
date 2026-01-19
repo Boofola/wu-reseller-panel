@@ -96,7 +96,6 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 
 		// Register AJAX handlers
 		add_action( 'wp_ajax_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
-		add_action( 'wp_ajax_nopriv_reseller_panel_test_connection', array( $this, 'handle_test_connection' ) );
 
 		// Handle form submissions for admin pages
 		add_action( 'load-reseller-panel_page_reseller-panel-services', function() {
@@ -138,20 +137,21 @@ if ( class_exists( 'Reseller_Panel\Settings_Manager' ) ) {
 		}
 
 		?>
-		<div class="notice notice-error">
-			<p>
-				<strong><?php esc_html_e( 'Ultimate Multisite - Reseller Panel', 'ultimate-multisite' ); ?></strong>
-			</p>
-			<p>
-				<?php esc_html_e( 'This plugin requires WordPress Multisite to function. Please activate WordPress Multisite before using this plugin.', 'ultimate-multisite' ); ?>
-			</p>
-			<p>
-				<a href="<?php echo esc_url( 'https://wordpress.org/documentation/article/create-a-network/' ); ?>" target="_blank" rel="noopener noreferrer">
-					<?php esc_html_e( 'Learn how to enable WordPress Multisite', 'ultimate-multisite' ); ?>
-				</a>
-			</p>
-		</div>
-		<?php
+<div class="notice notice-error">
+    <p>
+        <strong><?php esc_html_e( 'Ultimate Multisite - Reseller Panel', 'ultimate-multisite' ); ?></strong>
+    </p>
+    <p>
+        <?php esc_html_e( 'This plugin requires WordPress Multisite to function. Please activate WordPress Multisite before using this plugin.', 'ultimate-multisite' ); ?>
+    </p>
+    <p>
+        <a href="<?php echo esc_url( 'https://wordpress.org/documentation/article/create-a-network/' ); ?>"
+            target="_blank" rel="noopener noreferrer">
+            <?php esc_html_e( 'Learn how to enable WordPress Multisite', 'ultimate-multisite' ); ?>
+        </a>
+    </p>
+</div>
+<?php
 	}
 
 	/**
@@ -530,12 +530,28 @@ private function add_providers_order_column() {
 	global $wpdb;
 
 	$services_table = $wpdb->prefix . 'reseller_panel_services';
-	$columns = $wpdb->get_results( "DESCRIBE {$services_table}" );
+	
+	// Get column information with prepared statement
+	$columns = $wpdb->get_results( $wpdb->prepare( 'DESCRIBE %i', $services_table ) );
+	
+	// Check if query failed
+	if ( false === $columns ) {
+		\error_log( 'Reseller Panel - Failed to describe services table: ' . $wpdb->last_error );
+		return;
+	}
+	
 	$column_names = wp_list_pluck( $columns, 'Field' );
 
 	// Add providers_order column if it doesn't exist
 	if ( ! in_array( 'providers_order', $column_names, true ) ) {
-		$wpdb->query( "ALTER TABLE {$services_table} ADD COLUMN providers_order LONGTEXT NULL DEFAULT NULL" );
+		$result = $wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN providers_order LONGTEXT NULL DEFAULT NULL', $services_table ) );
+		
+		// Check if ALTER TABLE succeeded
+		if ( false === $result ) {
+			\error_log( 'Reseller Panel - Failed to add providers_order column: ' . $wpdb->last_error );
+			return;
+		}
+		
 		\error_log( 'Added providers_order column to reseller_panel_services table' );
 
 		// Migrate existing default/fallback providers to JSON format
@@ -552,29 +568,59 @@ private function migrate_providers_to_json() {
 	global $wpdb;
 
 	$services_table = $wpdb->prefix . 'reseller_panel_services';
-	$services = $wpdb->get_results( "SELECT id, default_provider, fallback_provider FROM {$services_table} WHERE default_provider IS NOT NULL OR fallback_provider IS NOT NULL" );
-
-	foreach ( $services as $service ) {
-		$providers_order = array();
-
-		if ( ! empty( $service->default_provider ) ) {
-			$providers_order[] = $service->default_provider;
+	
+	// Start transaction
+	$wpdb->query( 'START TRANSACTION' );
+	
+	try {
+		$services = $wpdb->get_results( "SELECT id, default_provider, fallback_provider FROM {$services_table} WHERE default_provider IS NOT NULL OR fallback_provider IS NOT NULL" );
+		
+		if ( false === $services ) {
+			$wpdb->query( 'ROLLBACK' );
+			\error_log( 'Reseller Panel - Failed to fetch services for migration: ' . $wpdb->last_error );
+			return;
 		}
 
-		if ( ! empty( $service->fallback_provider ) && $service->fallback_provider !== $service->default_provider ) {
-			$providers_order[] = $service->fallback_provider;
-		}
+		foreach ( $services as $service ) {
+			$providers_order = array();
 
-		if ( ! empty( $providers_order ) ) {
-			$providers_json = wp_json_encode( $providers_order );
-			$wpdb->update(
-				$services_table,
-				array( 'providers_order' => $providers_json ),
-				array( 'id' => $service->id )
-			);
+			if ( ! empty( $service->default_provider ) ) {
+				$providers_order[] = $service->default_provider;
+			}
+
+			if ( ! empty( $service->fallback_provider ) && $service->fallback_provider !== $service->default_provider ) {
+				$providers_order[] = $service->fallback_provider;
+			}
+
+			if ( ! empty( $providers_order ) ) {
+				$providers_json = wp_json_encode( $providers_order );
+				
+				if ( false === $providers_json ) {
+					$wpdb->query( 'ROLLBACK' );
+					\error_log( 'Reseller Panel - Failed to encode providers for service ID ' . $service->id );
+					return;
+				}
+				
+				$result = $wpdb->update(
+					$services_table,
+					array( 'providers_order' => $providers_json ),
+					array( 'id' => $service->id )
+				);
+				
+				if ( false === $result ) {
+					$wpdb->query( 'ROLLBACK' );
+					\error_log( 'Reseller Panel - Failed to update service ID ' . $service->id . ' during migration: ' . $wpdb->last_error );
+					return;
+				}
+			}
 		}
+		
+		// Commit transaction
+		$wpdb->query( 'COMMIT' );
+		\error_log( 'Migrated default/fallback providers to JSON format' );
+	} catch ( \Exception $e ) {
+		$wpdb->query( 'ROLLBACK' );
+		\error_log( 'Reseller Panel - Exception during provider migration: ' . $e->getMessage() );
 	}
-
-	\error_log( 'Migrated default/fallback providers to JSON format' );
 }
 }

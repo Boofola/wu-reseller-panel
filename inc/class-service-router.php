@@ -191,9 +191,14 @@ class Service_Router {
 
 		// Execute the action
 		// This will be expanded based on specific service/action combinations
-		do_action( 'reseller_panel_execute_action', $provider, $action, $params );
+		$result = apply_filters( 'reseller_panel_execute_action', null, $provider, $action, $params );
 
-		return true;
+		// Check if a handler was registered
+		if ( null === $result ) {
+			return new \WP_Error( 'no_handler', __( 'No handler registered for reseller_panel_execute_action', 'ultimate-multisite' ) );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -219,8 +224,9 @@ class Service_Router {
 
 		// Check if fallback log table exists, create if needed
 		$table_name = $wpdb->prefix . 'reseller_panel_fallback_logs';
+		$like_pattern = $wpdb->esc_like( $table_name );
 
-		if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like_pattern ) ) !== $table_name ) {
 			$this->create_fallback_log_table();
 		}
 
@@ -275,9 +281,20 @@ class Service_Router {
 			return false;
 		}
 
-		$primary_name = $this->provider_manager->get_provider( $primary_provider )->get_name();
-		$fallback_name = $this->provider_manager->get_provider( $fallback_provider )->get_name();
-		$site_name = get_blog_option( 1, 'blogname' );
+		$primary_provider_obj = $this->provider_manager->get_provider( $primary_provider );
+		$primary_name = $primary_provider_obj ? $primary_provider_obj->get_name() : ( $primary_provider ?: __( 'Unknown provider', 'ultimate-multisite' ) );
+		
+		$fallback_provider_obj = $this->provider_manager->get_provider( $fallback_provider );
+		$fallback_name = $fallback_provider_obj ? $fallback_provider_obj->get_name() : ( $fallback_provider ?: __( 'Unknown provider', 'ultimate-multisite' ) );
+		
+		$main_site_id = is_multisite() ? get_main_site_id() : 1;
+		$site_name = get_blog_option( $main_site_id, 'blogname' );
+		if ( ! $site_name && ! is_multisite() ) {
+			$site_name = get_option( 'blogname' );
+		}
+		if ( ! $site_name ) {
+			$site_name = __( 'Site', 'ultimate-multisite' );
+		}
 
 		$subject = sprintf(
 			__( '[%s] Reseller Panel: Service Fallback Triggered', 'ultimate-multisite' ),
@@ -312,13 +329,12 @@ class Service_Router {
 			'Service_Router',
 			'Sending fallback notification',
 			array(
-				'admin_email' => $admin_email,
+				'notification_sent' => true,
 				'service' => $service,
 				'primary' => $primary_provider,
 				'fallback' => $fallback_provider,
 			)
 		);
-
 		return wp_mail( $admin_email, $subject, $message );
 	}
 
@@ -333,14 +349,15 @@ class Service_Router {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'reseller_panel_fallback_logs';
+		$like_pattern = $wpdb->esc_like( $table_name );
 
-		if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like_pattern ) ) !== $table_name ) {
 			return array();
 		}
 
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM $table_name ORDER BY timestamp DESC LIMIT %d",
+				'SELECT * FROM ' . $wpdb->esc_sql( $table_name ) . ' ORDER BY timestamp DESC LIMIT %d',
 				$limit
 			)
 		);
