@@ -56,7 +56,7 @@ class NameCheap_Provider extends Base_Service_Provider {
 			),
 			'api_key' => array(
 				'label' => __( 'API Key', 'ultimate-multisite' ),
-				'type' => 'password',
+				'type' => 'text',
 				'description' => __( 'Your NameCheap API key', 'ultimate-multisite' ),
 			),
 			'username' => array(

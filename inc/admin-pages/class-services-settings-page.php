@@ -164,7 +164,8 @@ class Services_Settings_Page extends Admin_Page {
 									$default_providers = array();
 									$fallback_providers = array();
 
-									foreach ( $all_providers as $provider ) {
+									// Use configured providers (which includes enabled check)
+									foreach ( $configured_providers as $provider ) {
 										if ( $provider->supports_service( $service->service_key ) ) {
 											$default_providers[ $provider->get_key() ] = $provider->get_name();
 											$fallback_providers[ $provider->get_key() ] = $provider->get_name();

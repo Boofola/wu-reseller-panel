@@ -126,6 +126,16 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	}
 
 	/**
+	 * Check if provider is enabled
+	 *
+	 * @return bool
+	 */
+	public function is_enabled() {
+		// Default to true for backward compatibility
+		return (bool) $this->get_config_value( 'enabled', true );
+	}
+
+	/**
 	 * Get configuration fields
 	 *
 	 * @return array

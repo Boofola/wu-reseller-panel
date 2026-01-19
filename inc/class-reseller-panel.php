@@ -38,6 +38,9 @@ private function __construct() {
 $this->load_dependencies();
 $this->setup_hooks();
 
+// Initialize Logger
+\Reseller_Panel\Logger::init();
+
 // Don't initialize components during installation
 if ( ! defined( 'WP_INSTALLING' ) || ! WP_INSTALLING ) {
 $this->init_components();
@@ -242,82 +245,125 @@ array(
 	 * @return void
 	 */
 public function handle_test_connection() {
-if ( ! \current_user_can( 'manage_network' ) ) {
-\wp_send_json_error( 'Insufficient permissions' );
-}
-
-\check_ajax_referer( 'reseller_panel_provider_save', '_wpnonce' );
-
-$provider_key = isset( $_POST['provider'] ) ? \sanitize_key( $_POST['provider'] ) : '';
-
-if ( empty( $provider_key ) ) {
-\wp_send_json_error( 'No provider specified' );
-}
-
-// Load required classes
-require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
-require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
-require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
-require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
-require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
-
-$provider_manager = Provider_Manager::get_instance();
-$provider = $provider_manager->get_provider( $provider_key );
-
-if ( ! $provider ) {
-\wp_send_json_error( 'Provider not found' );
-}
-
-// Initialize debug array
-$debug_info = array();
-$debug_info[] = 'Provider: ' . $provider->get_name();
-$debug_info[] = 'Provider Key: ' . $provider_key;
-$debug_info[] = 'Timestamp: ' . current_time( 'Y-m-d H:i:s' );
-
-// Test the connection
-$result = $provider->test_connection();
-
-if ( \is_wp_error( $result ) ) {
-	$error_message = $result->get_error_message();
-	$error_code = $result->get_error_code();
-	$error_data = $result->get_error_data();
+	// Initialize debug array early
+	$debug_info = array();
+	$debug_info[] = 'Handler called';
 	
-	// Build debug information
-	$debug_info[] = 'Error Code: ' . $error_code;
-	
-	// Add error data if available
-	if ( ! empty( $error_data ) ) {
-		if ( is_array( $error_data ) ) {
-			foreach ( $error_data as $key => $value ) {
-				if ( is_scalar( $value ) ) {
-					$debug_info[] = ucfirst( str_replace( '_', ' ', $key ) ) . ': ' . $value;
-				}
-			}
-		} elseif ( is_string( $error_data ) ) {
-			$debug_info[] = 'Additional Info: ' . $error_data;
-		}
+	// Check permissions
+	if ( ! \current_user_can( 'manage_network' ) ) {
+		$debug_info[] = 'Insufficient permissions';
+		\wp_send_json_error( array(
+			'message' => 'Insufficient permissions',
+			'debug' => $debug_info,
+		) );
 	}
 	
-	// Log the error
-	Logger::log_error(
-		$provider->get_name(),
-		$error_message,
-		array(
-			'error_code' => $error_code,
-			'error_data' => $error_data,
-			'provider_key' => $provider_key,
-		)
-	);
-	
-	\wp_send_json_error(
-		array(
-			'message' => 'Error testing connection: ' . $error_message,
+	// Check nonce
+	if ( ! isset( $_POST['_wpnonce'] ) ) {
+		$debug_info[] = 'No nonce provided';
+		\wp_send_json_error( array(
+			'message' => 'Security check failed: no nonce',
 			'debug' => $debug_info,
-		)
-	);
-}
-
-\wp_send_json_success( 'Connection successful!' );
+		) );
+	}
+	
+	if ( ! \wp_verify_nonce( \sanitize_text_field( \wp_unslash( $_POST['_wpnonce'] ) ), 'reseller_panel_provider_nonce' ) ) {
+		$debug_info[] = 'Invalid nonce';
+		\wp_send_json_error( array(
+			'message' => 'Security check failed: invalid nonce',
+			'debug' => $debug_info,
+		) );
+	}
+	
+	$provider_key = isset( $_POST['provider'] ) ? \sanitize_key( $_POST['provider'] ) : '';
+	
+	if ( empty( $provider_key ) ) {
+		$debug_info[] = 'No provider key provided';
+		\wp_send_json_error( array(
+			'message' => 'No provider specified',
+			'debug' => $debug_info,
+		) );
+	}
+	
+	$debug_info[] = 'Provider key: ' . $provider_key;
+	
+	// Load required classes
+	require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-service-provider-interface.php';
+	require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
+	require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
+	require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
+	require_once RESELLER_PANEL_PATH . 'inc/class-provider-manager.php';
+	
+	$provider_manager = Provider_Manager::get_instance();
+	$provider = $provider_manager->get_provider( $provider_key );
+	
+	if ( ! $provider ) {
+		$debug_info[] = 'Provider not found: ' . $provider_key;
+		\Reseller_Panel\Logger::log_error(
+			'Unknown',
+			'Provider not found: ' . $provider_key,
+			array( 'provider_key' => $provider_key )
+		);
+		\wp_send_json_error( array(
+			'message' => 'Provider not found',
+			'debug' => $debug_info,
+		) );
+	}
+	
+	$debug_info[] = 'Provider: ' . $provider->get_name();
+	$debug_info[] = 'Timestamp: ' . \current_time( 'Y-m-d H:i:s' );
+	
+	// Test the connection
+	$debug_info[] = 'Testing connection...';
+	$result = $provider->test_connection();
+	$debug_info[] = 'Connection test completed';
+	
+	if ( \is_wp_error( $result ) ) {
+		$error_message = $result->get_error_message();
+		$error_code = $result->get_error_code();
+		$error_data = $result->get_error_data();
+		
+		// Build debug information
+		$debug_info[] = 'Error Code: ' . $error_code;
+		$debug_info[] = 'Error: ' . $error_message;
+		
+		// Add error data if available
+		if ( ! empty( $error_data ) ) {
+			if ( is_array( $error_data ) ) {
+				foreach ( $error_data as $key => $value ) {
+					if ( is_scalar( $value ) ) {
+						$debug_info[] = ucfirst( str_replace( '_', ' ', $key ) ) . ': ' . $value;
+					}
+				}
+			} elseif ( is_string( $error_data ) ) {
+				$debug_info[] = 'Additional Info: ' . $error_data;
+			}
+		}
+		
+		// Log the error
+		\Reseller_Panel\Logger::log_error(
+			$provider->get_name(),
+			$error_message,
+			array(
+				'error_code' => $error_code,
+				'error_data' => $error_data,
+				'provider_key' => $provider_key,
+			)
+		);
+		
+		\wp_send_json_error(
+			array(
+				'message' => 'Error testing connection: ' . $error_message,
+				'debug' => $debug_info,
+			)
+		);
+	}
+	
+	$debug_info[] = 'Connection successful!';
+	\wp_send_json_success( array(
+		'message' => 'Connection successful!',
+		'debug' => $debug_info,
+	) );
 }
 
 /**

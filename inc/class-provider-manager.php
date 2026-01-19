@@ -132,7 +132,7 @@ class Provider_Manager {
 
 		foreach ( $this->providers as $key => $provider ) {
 			$provider->load_config();
-			if ( $provider->is_configured() ) {
+			if ( $provider->is_configured() && $provider->is_enabled() ) {
 				$configured[ $key ] = $provider;
 			}
 		}
@@ -152,7 +152,7 @@ class Provider_Manager {
 
 		foreach ( $this->get_providers_by_service( $service ) as $key => $provider ) {
 			$provider->load_config();
-			if ( $provider->is_configured() ) {
+			if ( $provider->is_configured() && $provider->is_enabled() ) {
 				$available[ $key ] = $provider;
 			}
 		}

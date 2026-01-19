@@ -50,7 +50,7 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		return array(
 			'api_key' => array(
 				'label' => __( 'API Key', 'ultimate-multisite' ),
-				'type' => 'password',
+				'type' => 'text',
 				'description' => __( 'Your OpenSRS API key (also known as Private Key)', 'ultimate-multisite' ),
 				'link' => 'https://manage.opensrs.com/account/settings/api',
 				'link_text' => __( 'Get API Key', 'ultimate-multisite' ),
