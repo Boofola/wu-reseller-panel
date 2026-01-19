@@ -17,6 +17,8 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 
 	const TEST_ENDPOINT = 'https://horizon.opensrs.net:55443';
 	const LIVE_ENDPOINT = 'https://rr-n1-tor.opensrs.net:55443';
+	const MAX_RESPONSE_BODY_LENGTH = 500;
+	const MAX_XML_PREVIEW_LENGTH = 200;
 
 	/**
 	 * Provider key
@@ -211,7 +213,7 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				sprintf( __( 'HTTP error %d received from OpenSRS API', 'ultimate-multisite' ), $http_code ),
 				array(
 					'http_code' => $http_code,
-					'response_body' => substr( $body, 0, 500 ), // First 500 chars
+					'response_body' => substr( $body, 0, self::MAX_RESPONSE_BODY_LENGTH ), // First 500 chars
 					'endpoint' => $endpoint,
 				)
 			);
@@ -300,7 +302,7 @@ XML;
 				__( 'Invalid XML response from OpenSRS', 'ultimate-multisite' ),
 				array(
 					'xml_errors' => implode( '; ', $error_messages ),
-					'response_preview' => substr( $xml, 0, 200 ),
+					'response_preview' => substr( $xml, 0, self::MAX_XML_PREVIEW_LENGTH ),
 				)
 			);
 		}

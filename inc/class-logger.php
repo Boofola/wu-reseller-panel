@@ -140,11 +140,22 @@ class Logger {
 
 		// Read last N lines efficiently
 		$file = new \SplFileObject( self::$log_file, 'r' );
-		$file->seek( PHP_INT_MAX );
-		$last_line = $file->key();
-		$start_line = max( 0, $last_line - $lines );
+		
+		// Count total lines by seeking to the end
+		$file->seek( $file->getSize() );
+		$file->rewind();
+		
+		// Seek to the end to get line count
+		$line_count = 0;
+		while ( ! $file->eof() ) {
+			$file->fgets();
+			$line_count++;
+		}
+		
+		$start_line = max( 0, $line_count - $lines );
 		
 		$log_content = '';
+		$file->rewind();
 		$file->seek( $start_line );
 		while ( ! $file->eof() ) {
 			$log_content .= $file->fgets();

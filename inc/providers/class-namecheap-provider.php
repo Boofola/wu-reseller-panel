@@ -16,6 +16,8 @@ class NameCheap_Provider extends Base_Service_Provider {
 
 	const TEST_ENDPOINT = 'https://api.sandbox.namecheap.com/api/xml.response';
 	const LIVE_ENDPOINT = 'https://api.namecheap.com/api/xml.response';
+	const MAX_RESPONSE_BODY_LENGTH = 500;
+	const MAX_XML_PREVIEW_LENGTH = 200;
 
 	/**
 	 * Provider key
@@ -231,7 +233,7 @@ class NameCheap_Provider extends Base_Service_Provider {
 				sprintf( __( 'HTTP error %d received from NameCheap API', 'ultimate-multisite' ), $http_code ),
 				array(
 					'http_code' => $http_code,
-					'response_body' => substr( $body, 0, 500 ), // First 500 chars
+					'response_body' => substr( $body, 0, self::MAX_RESPONSE_BODY_LENGTH ), // First 500 chars
 					'endpoint' => $endpoint,
 				)
 			);
@@ -285,7 +287,7 @@ class NameCheap_Provider extends Base_Service_Provider {
 				__( 'Invalid XML response from NameCheap', 'ultimate-multisite' ),
 				array(
 					'xml_errors' => implode( '; ', $error_messages ),
-					'response_preview' => substr( $xml, 0, 200 ),
+					'response_preview' => substr( $xml, 0, self::MAX_XML_PREVIEW_LENGTH ),
 				)
 			);
 		}
