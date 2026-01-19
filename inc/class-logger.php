@@ -25,7 +25,7 @@ class Logger {
 	public static function init() {
 		// Set log file path in WordPress uploads directory
 		$upload_dir = wp_upload_dir();
-		$log_dir = $upload_dir['basedir'] . '/reseller-panel-logs';
+		$log_dir = $upload_dir['basedir'] . '/wu-logs';
 		
 		// Create log directory if it doesn't exist
 		if ( ! file_exists( $log_dir ) ) {
@@ -51,7 +51,7 @@ class Logger {
 			}
 		}
 		
-		self::$log_file = $log_dir . '/errors.log';
+		self::$log_file = $log_dir . '/reseller-panel-errors.log';
 	}
 
 	/**
