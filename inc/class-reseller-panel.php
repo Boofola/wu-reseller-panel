@@ -267,7 +267,7 @@ public function handle_test_connection() {
 		) );
 	}
 	
-	if ( ! \wp_verify_nonce( $_POST['_wpnonce'], 'reseller_panel_provider_nonce' ) ) {
+	if ( ! \wp_verify_nonce( \sanitize_text_field( \wp_unslash( $_POST['_wpnonce'] ) ), 'reseller_panel_provider_nonce' ) ) {
 		$debug_info[] = 'Invalid nonce';
 		\wp_send_json_error( array(
 			'message' => 'Security check failed: invalid nonce',
