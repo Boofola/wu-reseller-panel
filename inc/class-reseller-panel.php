@@ -55,6 +55,9 @@ require_once RESELLER_PANEL_PATH . 'inc/interfaces/class-domain-importer-interfa
 // Base classes
 require_once RESELLER_PANEL_PATH . 'inc/abstract/class-base-service-provider.php';
 
+// Utilities
+require_once RESELLER_PANEL_PATH . 'inc/class-logger.php';
+
 // Providers
 require_once RESELLER_PANEL_PATH . 'inc/providers/class-opensrs-provider.php';
 require_once RESELLER_PANEL_PATH . 'inc/providers/class-namecheap-provider.php';
@@ -266,11 +269,53 @@ if ( ! $provider ) {
 \wp_send_json_error( 'Provider not found' );
 }
 
+// Initialize debug array
+$debug_info = array();
+$debug_info[] = 'Provider: ' . $provider->get_name();
+$debug_info[] = 'Provider Key: ' . $provider_key;
+$debug_info[] = 'Timestamp: ' . current_time( 'Y-m-d H:i:s' );
+
 // Test the connection
 $result = $provider->test_connection();
 
 if ( \is_wp_error( $result ) ) {
-\wp_send_json_error( $result->get_error_message() );
+	$error_message = $result->get_error_message();
+	$error_code = $result->get_error_code();
+	$error_data = $result->get_error_data();
+	
+	// Build debug information
+	$debug_info[] = 'Error Code: ' . $error_code;
+	
+	// Add error data if available
+	if ( ! empty( $error_data ) ) {
+		if ( is_array( $error_data ) ) {
+			foreach ( $error_data as $key => $value ) {
+				if ( is_scalar( $value ) ) {
+					$debug_info[] = ucfirst( str_replace( '_', ' ', $key ) ) . ': ' . $value;
+				}
+			}
+		} elseif ( is_string( $error_data ) ) {
+			$debug_info[] = 'Additional Info: ' . $error_data;
+		}
+	}
+	
+	// Log the error
+	Logger::log_error(
+		$provider->get_name(),
+		$error_message,
+		array(
+			'error_code' => $error_code,
+			'error_data' => $error_data,
+			'provider_key' => $provider_key,
+		)
+	);
+	
+	\wp_send_json_error(
+		array(
+			'message' => 'Error testing connection: ' . $error_message,
+			'debug' => $debug_info,
+		)
+	);
 }
 
 \wp_send_json_success( 'Connection successful!' );

@@ -123,6 +123,7 @@ class NameCheap_Provider extends Base_Service_Provider {
 				// Add more context to the error message
 				$error_message = $response->get_error_message();
 				$error_code = $response->get_error_code();
+				$error_data = $response->get_error_data();
 				
 				// Provide helpful hints for common errors
 				if ( strpos( $error_message, 'cURL error' ) !== false ) {
@@ -135,7 +136,7 @@ class NameCheap_Provider extends Base_Service_Provider {
 					$error_message .= ' - Please verify your API credentials are correct.';
 				}
 				
-				return new \WP_Error( $error_code, $error_message );
+				return new \WP_Error( $error_code, $error_message, $error_data );
 			}
 
 			if ( isset( $response['ApiResponse']['UserGetBalanceResult']['AccountBalance'] ) ) {
@@ -192,9 +193,11 @@ class NameCheap_Provider extends Base_Service_Provider {
 		// Merge with provided parameters
 		$request_params = array_merge( $request_params, $params );
 
+		$url = add_query_arg( $request_params, $endpoint );
+
 		// Make HTTP request
 		$response = wp_remote_get(
-			add_query_arg( $request_params, $endpoint ),
+			$url,
 			array(
 				'timeout' => 30,
 				'sslverify' => true,
@@ -202,10 +205,37 @@ class NameCheap_Provider extends Base_Service_Provider {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return $response;
+			// Add detailed diagnostic information to the error
+			$error_message = $response->get_error_message();
+			$error_code = $response->get_error_code();
+			
+			return new \WP_Error(
+				$error_code,
+				$error_message,
+				array(
+					'endpoint' => $endpoint,
+					'command' => $command,
+					'environment' => $environment,
+					'client_ip' => $request_params['ClientIp'],
+				)
+			);
 		}
 
+		$http_code = wp_remote_retrieve_response_code( $response );
 		$body = wp_remote_retrieve_body( $response );
+
+		// Check for HTTP errors
+		if ( $http_code !== 200 ) {
+			return new \WP_Error(
+				'http_error',
+				sprintf( __( 'HTTP error %d received from NameCheap API', 'ultimate-multisite' ), $http_code ),
+				array(
+					'http_code' => $http_code,
+					'response_body' => substr( $body, 0, 500 ), // First 500 chars
+					'endpoint' => $endpoint,
+				)
+			);
+		}
 
 		return $this->parse_xml_response( $body );
 	}
@@ -243,7 +273,21 @@ class NameCheap_Provider extends Base_Service_Provider {
 		$doc = new \DOMDocument();
 
 		if ( ! $doc->loadXML( $xml ) ) {
-			return new \WP_Error( 'invalid_xml', __( 'Invalid XML response', 'ultimate-multisite' ) );
+			$errors = libxml_get_errors();
+			$error_messages = array();
+			foreach ( $errors as $error ) {
+				$error_messages[] = trim( $error->message );
+			}
+			libxml_clear_errors();
+			
+			return new \WP_Error(
+				'invalid_xml',
+				__( 'Invalid XML response from NameCheap', 'ultimate-multisite' ),
+				array(
+					'xml_errors' => implode( '; ', $error_messages ),
+					'response_preview' => substr( $xml, 0, 200 ),
+				)
+			);
 		}
 
 		$xpath = new \DOMXPath( $doc );
@@ -251,11 +295,25 @@ class NameCheap_Provider extends Base_Service_Provider {
 		// Check for API errors
 		$errors = $xpath->query( '//ApiResponse/Errors/Error' );
 		if ( $errors->length > 0 ) {
-			$error_text = '';
+			$error_messages = array();
+			$error_numbers = array();
+			
 			foreach ( $errors as $error ) {
-				$error_text .= $error->nodeValue . '; ';
+				$error_messages[] = $error->nodeValue;
+				$number_attr = $error->getAttribute( 'Number' );
+				if ( $number_attr ) {
+					$error_numbers[] = $number_attr;
+				}
 			}
-			return new \WP_Error( 'api_error', trim( $error_text ) );
+			
+			$error_text = implode( '; ', $error_messages );
+			$error_data = array();
+			
+			if ( ! empty( $error_numbers ) ) {
+				$error_data['error_numbers'] = implode( ', ', $error_numbers );
+			}
+			
+			return new \WP_Error( 'api_error', $error_text, $error_data );
 		}
 
 		// Convert XML to array

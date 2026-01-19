@@ -101,6 +101,7 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				// Add more context to the error message
 				$error_message = $response->get_error_message();
 				$error_code = $response->get_error_code();
+				$error_data = $response->get_error_data();
 				
 				// Provide helpful hints for common errors
 				if ( strpos( $error_message, 'cURL error' ) !== false ) {
@@ -109,7 +110,7 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 					$error_message .= ' - Both API Key and Username are required.';
 				}
 				
-				return new \WP_Error( $error_code, $error_message );
+				return new \WP_Error( $error_code, $error_message, $error_data );
 			}
 
 			if ( isset( $response['is_success'] ) && 1 === (int) $response['is_success'] ) {
@@ -118,13 +119,17 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 
 			// Extract more detailed error information from response
 			$error_text = isset( $response['response_text'] ) ? $response['response_text'] : __( 'Connection failed', 'ultimate-multisite' );
-			$error_code = isset( $response['response_code'] ) ? $response['response_code'] : '';
+			$error_code = isset( $response['response_code'] ) ? $response['response_code'] : 'unknown';
+			
+			$error_data = array(
+				'response_code' => $error_code,
+			);
 			
 			if ( $error_code ) {
 				$error_text .= ' (Code: ' . $error_code . ')';
 			}
 
-			return new \WP_Error( 'api_error', $error_text );
+			return new \WP_Error( 'api_error', $error_text, $error_data );
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 
 				'exception', 
@@ -180,10 +185,37 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return $response;
+			// Add detailed diagnostic information to the error
+			$error_message = $response->get_error_message();
+			$error_code = $response->get_error_code();
+			
+			return new \WP_Error(
+				$error_code,
+				$error_message,
+				array(
+					'endpoint' => $endpoint,
+					'action' => $action,
+					'object' => $object,
+					'environment' => $environment,
+				)
+			);
 		}
 
+		$http_code = wp_remote_retrieve_response_code( $response );
 		$body = wp_remote_retrieve_body( $response );
+
+		// Check for HTTP errors
+		if ( $http_code !== 200 ) {
+			return new \WP_Error(
+				'http_error',
+				sprintf( __( 'HTTP error %d received from OpenSRS API', 'ultimate-multisite' ), $http_code ),
+				array(
+					'http_code' => $http_code,
+					'response_body' => substr( $body, 0, 500 ), // First 500 chars
+					'endpoint' => $endpoint,
+				)
+			);
+		}
 
 		return $this->parse_xml_response( $body );
 	}
@@ -256,7 +288,21 @@ XML;
 		$doc = new \DOMDocument();
 
 		if ( ! $doc->loadXML( $xml ) ) {
-			return new \WP_Error( 'invalid_xml', __( 'Invalid XML response', 'ultimate-multisite' ) );
+			$errors = libxml_get_errors();
+			$error_messages = array();
+			foreach ( $errors as $error ) {
+				$error_messages[] = trim( $error->message );
+			}
+			libxml_clear_errors();
+			
+			return new \WP_Error(
+				'invalid_xml',
+				__( 'Invalid XML response from OpenSRS', 'ultimate-multisite' ),
+				array(
+					'xml_errors' => implode( '; ', $error_messages ),
+					'response_preview' => substr( $xml, 0, 200 ),
+				)
+			);
 		}
 
 		$xpath = new \DOMXPath( $doc );
@@ -273,11 +319,21 @@ XML;
 		$response_text_node = $xpath->query( '//item[@key="response_text"]' );
 		$response_text = $response_text_node->length > 0 ? $response_text_node[0]->nodeValue : '';
 
-		return array(
+		$result = array(
 			'is_success' => $is_success,
 			'response_code' => $response_code,
 			'response_text' => $response_text,
 		);
+
+		// If not successful, add as error data for better debugging
+		if ( ! $is_success && $response_text ) {
+			$result['error_details'] = array(
+				'response_code' => $response_code,
+				'response_text' => $response_text,
+			);
+		}
+
+		return $result;
 	}
 
 	/**
