@@ -213,7 +213,7 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				sprintf( __( 'HTTP error %d received from OpenSRS API', 'ultimate-multisite' ), $http_code ),
 				array(
 					'http_code' => $http_code,
-					'response_body' => substr( $body, 0, self::MAX_RESPONSE_BODY_LENGTH ), // First 500 chars
+					'response_body' => substr( $body, 0, self::MAX_RESPONSE_BODY_LENGTH ),
 					'endpoint' => $endpoint,
 				)
 			);

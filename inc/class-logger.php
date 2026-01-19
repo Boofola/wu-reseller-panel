@@ -34,7 +34,14 @@ class Logger {
 			// Add .htaccess to protect log files
 			$htaccess_file = $log_dir . '/.htaccess';
 			if ( ! file_exists( $htaccess_file ) ) {
-				file_put_contents( $htaccess_file, "deny from all\n" );
+				// Use Apache 2.4+ syntax with fallback for Apache 2.2
+				$htaccess_content = "<IfModule mod_authz_core.c>\n";
+				$htaccess_content .= "    Require all denied\n";
+				$htaccess_content .= "</IfModule>\n";
+				$htaccess_content .= "<IfModule !mod_authz_core.c>\n";
+				$htaccess_content .= "    deny from all\n";
+				$htaccess_content .= "</IfModule>\n";
+				file_put_contents( $htaccess_file, $htaccess_content );
 			}
 			
 			// Add index.php to prevent directory listing
@@ -138,29 +145,20 @@ class Logger {
 			return '';
 		}
 
-		// Read last N lines efficiently
-		$file = new \SplFileObject( self::$log_file, 'r' );
+		// For simplicity and reliability, read entire file and get last N lines
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$file_content = file_get_contents( self::$log_file );
 		
-		// Count total lines by seeking to the end
-		$file->seek( $file->getSize() );
-		$file->rewind();
-		
-		// Seek to the end to get line count
-		$line_count = 0;
-		while ( ! $file->eof() ) {
-			$file->fgets();
-			$line_count++;
+		if ( false === $file_content ) {
+			return '';
 		}
 		
-		$start_line = max( 0, $line_count - $lines );
+		$all_lines = explode( "\n", $file_content );
+		$total_lines = count( $all_lines );
+		$start_line = max( 0, $total_lines - $lines );
 		
-		$log_content = '';
-		$file->rewind();
-		$file->seek( $start_line );
-		while ( ! $file->eof() ) {
-			$log_content .= $file->fgets();
-		}
+		$recent_lines = array_slice( $all_lines, $start_line );
 		
-		return $log_content;
+		return implode( "\n", $recent_lines );
 	}
 }
