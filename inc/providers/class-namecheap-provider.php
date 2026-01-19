@@ -116,6 +116,11 @@ class NameCheap_Provider extends Base_Service_Provider {
 		}
 
 		try {
+			$client_ip = $this->get_config_value( 'client_ip', '' );
+			$detected_ip = $this->get_server_ip();
+			$environment = $this->get_config_value( 'environment', 'sandbox' );
+			$endpoint = 'live' === $environment ? self::LIVE_ENDPOINT : self::TEST_ENDPOINT;
+			
 			$response = $this->make_request(
 				'namecheap.users.getBalance',
 				array()
@@ -127,13 +132,35 @@ class NameCheap_Provider extends Base_Service_Provider {
 				$error_code = $response->get_error_code();
 				$error_data = $response->get_error_data();
 				
+				// Enhance error data with additional context
+				if ( ! is_array( $error_data ) ) {
+					$error_data = array();
+				}
+				
+				// Add client IP information for IP whitelist debugging
+				if ( ! isset( $error_data['client_ip'] ) ) {
+					$error_data['client_ip'] = $client_ip ?: $detected_ip;
+				}
+				if ( ! isset( $error_data['detected_ip'] ) ) {
+					$error_data['detected_ip'] = $detected_ip;
+				}
+				if ( ! isset( $error_data['endpoint'] ) ) {
+					$error_data['endpoint'] = $endpoint;
+				}
+				if ( ! isset( $error_data['environment'] ) ) {
+					$error_data['environment'] = $environment;
+				}
+				
 				// Provide helpful hints for common errors
 				if ( strpos( $error_message, 'cURL error' ) !== false ) {
 					$error_message .= ' - Please check your server\'s network connectivity and SSL certificate configuration.';
 				} elseif ( $error_code === 'missing_credentials' ) {
 					$error_message .= ' - API User, API Key, and Username are all required.';
 				} elseif ( strpos( $error_message, 'Invalid request IP' ) !== false ) {
-					$error_message .= ' - Your server IP may not be whitelisted in your NameCheap account. Please add it in your NameCheap API settings.';
+					$error_message .= sprintf(
+						' - Your server IP (%s) may not be whitelisted in your NameCheap account. Please add it in your NameCheap API settings.',
+						$client_ip ?: $detected_ip
+					);
 				} elseif ( strpos( $error_message, 'API key is invalid' ) !== false ) {
 					$error_message .= ' - Please verify your API credentials are correct.';
 				}
@@ -147,7 +174,12 @@ class NameCheap_Provider extends Base_Service_Provider {
 
 			return new \WP_Error( 
 				'api_error', 
-				__( 'Connection failed. The API returned an unexpected response. Please verify your credentials and try again.', 'ultimate-multisite' ) 
+				__( 'Connection failed. The API returned an unexpected response. Please verify your credentials and try again.', 'ultimate-multisite' ),
+				array(
+					'endpoint' => $endpoint,
+					'environment' => $environment,
+					'client_ip' => $client_ip ?: $detected_ip,
+				)
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 
@@ -155,6 +187,11 @@ class NameCheap_Provider extends Base_Service_Provider {
 				sprintf( 
 					__( 'Exception occurred: %s. Please verify your API credentials and try again.', 'ultimate-multisite' ), 
 					$e->getMessage() 
+				),
+				array(
+					'exception_class' => get_class( $e ),
+					'exception_file' => $e->getFile(),
+					'exception_line' => $e->getLine(),
 				)
 			);
 		}

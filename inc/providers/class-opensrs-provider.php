@@ -97,6 +97,9 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		}
 
 		try {
+			$environment = $this->get_config_value( 'environment', 'test' );
+			$endpoint = 'live' === $environment ? self::LIVE_ENDPOINT : self::TEST_ENDPOINT;
+			
 			$response = $this->make_request( 'ACCOUNT', 'GET_BALANCE' );
 
 			if ( is_wp_error( $response ) ) {
@@ -105,11 +108,25 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				$error_code = $response->get_error_code();
 				$error_data = $response->get_error_data();
 				
+				// Enhance error data with additional context
+				if ( ! is_array( $error_data ) ) {
+					$error_data = array();
+				}
+				
+				if ( ! isset( $error_data['endpoint'] ) ) {
+					$error_data['endpoint'] = $endpoint;
+				}
+				if ( ! isset( $error_data['environment'] ) ) {
+					$error_data['environment'] = $environment;
+				}
+				
 				// Provide helpful hints for common errors
 				if ( strpos( $error_message, 'cURL error' ) !== false ) {
 					$error_message .= ' - Please check your server\'s network connectivity and SSL certificate configuration.';
 				} elseif ( $error_code === 'missing_credentials' ) {
 					$error_message .= ' - Both API Key and Username are required.';
+				} elseif ( strpos( $error_message, 'Authentication failed' ) !== false || strpos( $error_message, 'Invalid signature' ) !== false ) {
+					$error_message .= ' - Please verify your API key and username are correct.';
 				}
 				
 				return new \WP_Error( $error_code, $error_message, $error_data );
@@ -125,6 +142,8 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 			
 			$error_data = array(
 				'response_code' => $error_code,
+				'endpoint' => $endpoint,
+				'environment' => $environment,
 			);
 			
 			if ( $error_code ) {
@@ -138,6 +157,11 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				sprintf( 
 					__( 'Exception occurred: %s. Please verify your API credentials and try again.', 'ultimate-multisite' ), 
 					$e->getMessage() 
+				),
+				array(
+					'exception_class' => get_class( $e ),
+					'exception_file' => $e->getFile(),
+					'exception_line' => $e->getLine(),
 				)
 			);
 		}
