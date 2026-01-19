@@ -93,6 +93,9 @@ class Provider_Settings_Page extends Admin_Page {
 			}
 		}
 
+		// Handle enabled checkbox (defaults to false if not checked)
+		$config['enabled'] = isset( $_POST['enabled'] ) ? 1 : 0;
+
 		// Save configuration
 		if ( method_exists( $provider, 'save_config' ) ) {
 			$provider->save_config( $config );
@@ -233,6 +236,17 @@ class Provider_Settings_Page extends Admin_Page {
 				<?php endif; ?>
     <div class="reseller-panel-form-container">
         <h2><?php echo esc_html( $provider->get_name() ); ?></h2>
+
+        <!-- Provider Enable/Disable -->
+        <div class="reseller-panel-form-group" style="border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 20px;">
+            <label for="enabled" style="font-weight: bold;">
+                <input type="checkbox" id="enabled" name="enabled" value="1" <?php checked( $provider->is_enabled(), true ); ?> />
+                <?php esc_html_e( 'Enable this provider', 'ultimate-multisite' ); ?>
+            </label>
+            <p class="description">
+                <?php esc_html_e( 'When disabled, this provider will not appear in service settings and cannot be used for any services.', 'ultimate-multisite' ); ?>
+            </p>
+        </div>
 
         <?php foreach ( $config_fields as $field_key => $field ) : ?>
         <?php
