@@ -39,7 +39,7 @@ $this->load_dependencies();
 $this->setup_hooks();
 
 // Initialize Logger
-Logger::init();
+\Reseller_Panel\Logger::init();
 
 // Don't initialize components during installation
 if ( ! defined( 'WP_INSTALLING' ) || ! WP_INSTALLING ) {
@@ -299,7 +299,7 @@ public function handle_test_connection() {
 	
 	if ( ! $provider ) {
 		$debug_info[] = 'Provider not found: ' . $provider_key;
-		Logger::log_error(
+		\Reseller_Panel\Logger::log_error(
 			'Unknown',
 			'Provider not found: ' . $provider_key,
 			array( 'provider_key' => $provider_key )
@@ -341,7 +341,7 @@ public function handle_test_connection() {
 		}
 		
 		// Log the error
-		Logger::log_error(
+		\Reseller_Panel\Logger::log_error(
 			$provider->get_name(),
 			$error_message,
 			array(
