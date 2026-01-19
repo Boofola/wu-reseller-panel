@@ -512,9 +512,69 @@ $logs_sql = "CREATE TABLE IF NOT EXISTS $logs_table (
 require_once \ABSPATH . 'wp-admin/includes/upgrade.php';
 \dbDelta( $services_sql );
 \dbDelta( $providers_sql );
-\dbDelta( $logs_sql );
+	\dbDelta( $logs_sql );
 
-// Log table creation for debugging
-\error_log( 'Reseller Panel - Database tables created/verified' );
+	// Add providers_order column if it doesn't exist (for multi-provider ranking)
+	$this->add_providers_order_column();
+
+	// Log table creation for debugging
+	\error_log( 'Reseller Panel - Database tables created/verified' );
+}
+
+/**
+ * Add providers_order column for multi-provider ranking (migration)
+ *
+ * @return void
+ */
+private function add_providers_order_column() {
+	global $wpdb;
+
+	$services_table = $wpdb->prefix . 'reseller_panel_services';
+	$columns = $wpdb->get_results( "DESCRIBE {$services_table}" );
+	$column_names = wp_list_pluck( $columns, 'Field' );
+
+	// Add providers_order column if it doesn't exist
+	if ( ! in_array( 'providers_order', $column_names, true ) ) {
+		$wpdb->query( "ALTER TABLE {$services_table} ADD COLUMN providers_order LONGTEXT NULL DEFAULT NULL" );
+		\error_log( 'Added providers_order column to reseller_panel_services table' );
+
+		// Migrate existing default/fallback providers to JSON format
+		$this->migrate_providers_to_json();
+	}
+}
+
+/**
+ * Migrate existing default_provider and fallback_provider to new JSON format
+ *
+ * @return void
+ */
+private function migrate_providers_to_json() {
+	global $wpdb;
+
+	$services_table = $wpdb->prefix . 'reseller_panel_services';
+	$services = $wpdb->get_results( "SELECT id, default_provider, fallback_provider FROM {$services_table} WHERE default_provider IS NOT NULL OR fallback_provider IS NOT NULL" );
+
+	foreach ( $services as $service ) {
+		$providers_order = array();
+
+		if ( ! empty( $service->default_provider ) ) {
+			$providers_order[] = $service->default_provider;
+		}
+
+		if ( ! empty( $service->fallback_provider ) && $service->fallback_provider !== $service->default_provider ) {
+			$providers_order[] = $service->fallback_provider;
+		}
+
+		if ( ! empty( $providers_order ) ) {
+			$providers_json = wp_json_encode( $providers_order );
+			$wpdb->update(
+				$services_table,
+				array( 'providers_order' => $providers_json ),
+				array( 'id' => $service->id )
+			);
+		}
+	}
+
+	\error_log( 'Migrated default/fallback providers to JSON format' );
 }
 }

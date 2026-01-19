@@ -184,10 +184,24 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		$environment = $this->get_config_value( 'environment', 'test' );
 
 		if ( ! $username || ! $api_key ) {
-			return new \WP_Error( 'missing_credentials', __( 'OpenSRS credentials are incomplete', 'ultimate-multisite' ) );
+			$error = new \WP_Error( 'missing_credentials', __( 'OpenSRS credentials are incomplete', 'ultimate-multisite' ) );
+			\Reseller_Panel\Logger::log_error( 'OpenSRS', $error->get_error_message(), array( 'action' => $action, 'object' => $object ) );
+			return $error;
 		}
 
 		$endpoint = 'live' === $environment ? self::LIVE_ENDPOINT : self::TEST_ENDPOINT;
+
+		// Log API call
+		\Reseller_Panel\Logger::log_api_call(
+			'OpenSRS',
+			sprintf( '%s/%s', $object, $action ),
+			'POST',
+			array(
+				'environment' => $environment,
+				'endpoint' => $endpoint,
+				'attributes_count' => count( $attributes ),
+			)
+		);
 
 		// Build XML request
 		$xml = $this->build_xml_request( $object, $action, $attributes, $username, $api_key );
@@ -211,6 +225,17 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		);
 
 		if ( is_wp_error( $response ) ) {
+			// Log error
+			\Reseller_Panel\Logger::log_error(
+				'OpenSRS',
+				$response->get_error_message(),
+				array(
+					'action' => $action,
+					'object' => $object,
+					'error_code' => $response->get_error_code(),
+				)
+			);
+
 			// Add detailed diagnostic information to the error
 			$error_message = $response->get_error_message();
 			$error_code = $response->get_error_code();
@@ -230,9 +255,19 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 		$http_code = wp_remote_retrieve_response_code( $response );
 		$body = wp_remote_retrieve_body( $response );
 
+		// Log response
+		\Reseller_Panel\Logger::log_info(
+			'OpenSRS',
+			sprintf( '%s/%s - Response received', $object, $action ),
+			array(
+				'http_code' => $http_code,
+				'response_length' => strlen( $body ),
+			)
+		);
+
 		// Check for HTTP errors
 		if ( $http_code !== 200 ) {
-			return new \WP_Error(
+			$error = new \WP_Error(
 				'http_error',
 				sprintf( __( 'HTTP error %d received from OpenSRS API', 'ultimate-multisite' ), $http_code ),
 				array(
@@ -241,9 +276,18 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 					'endpoint' => $endpoint,
 				)
 			);
+			\Reseller_Panel\Logger::log_error( 'OpenSRS', $error->get_error_message(), array( 'action' => $action, 'http_code' => $http_code ) );
+			return $error;
 		}
 
-		return $this->parse_xml_response( $body );
+		$parsed = $this->parse_xml_response( $body );
+
+		// Log parsing errors
+		if ( is_wp_error( $parsed ) ) {
+			\Reseller_Panel\Logger::log_error( 'OpenSRS', $parsed->get_error_message(), array( 'action' => $action ) );
+		}
+
+		return $parsed;
 	}
 
 	/**

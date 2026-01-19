@@ -215,7 +215,9 @@ class NameCheap_Provider extends Base_Service_Provider {
 		$client_ip = $this->get_config_value( 'client_ip', '' );
 
 		if ( ! $api_user || ! $api_key || ! $username ) {
-			return new \WP_Error( 'missing_credentials', __( 'NameCheap credentials are incomplete', 'ultimate-multisite' ) );
+			$error = new \WP_Error( 'missing_credentials', __( 'NameCheap credentials are incomplete', 'ultimate-multisite' ) );
+			\Reseller_Panel\Logger::log_error( 'NameCheap', $error->get_error_message(), array( 'command' => $command ) );
+			return $error;
 		}
 
 		$endpoint = 'live' === $environment ? self::LIVE_ENDPOINT : self::TEST_ENDPOINT;
@@ -232,6 +234,18 @@ class NameCheap_Provider extends Base_Service_Provider {
 		// Merge with provided parameters
 		$request_params = array_merge( $request_params, $params );
 
+		// Log API call
+		\Reseller_Panel\Logger::log_api_call(
+			'NameCheap',
+			$command,
+			'GET',
+			array(
+				'environment' => $environment,
+				'endpoint' => $endpoint,
+				'params_count' => count( $params ),
+			)
+		);
+
 		$url = add_query_arg( $request_params, $endpoint );
 
 		// Make HTTP request
@@ -244,6 +258,16 @@ class NameCheap_Provider extends Base_Service_Provider {
 		);
 
 		if ( is_wp_error( $response ) ) {
+			// Log error
+			\Reseller_Panel\Logger::log_error(
+				'NameCheap',
+				$response->get_error_message(),
+				array(
+					'command' => $command,
+					'error_code' => $response->get_error_code(),
+				)
+			);
+
 			// Add detailed diagnostic information to the error
 			$error_message = $response->get_error_message();
 			$error_code = $response->get_error_code();
@@ -263,9 +287,19 @@ class NameCheap_Provider extends Base_Service_Provider {
 		$http_code = wp_remote_retrieve_response_code( $response );
 		$body = wp_remote_retrieve_body( $response );
 
+		// Log response
+		\Reseller_Panel\Logger::log_info(
+			'NameCheap',
+			sprintf( '%s - Response received', $command ),
+			array(
+				'http_code' => $http_code,
+				'response_length' => strlen( $body ),
+			)
+		);
+
 		// Check for HTTP errors
 		if ( $http_code !== 200 ) {
-			return new \WP_Error(
+			$error = new \WP_Error(
 				'http_error',
 				sprintf( __( 'HTTP error %d received from NameCheap API', 'ultimate-multisite' ), $http_code ),
 				array(
@@ -274,9 +308,18 @@ class NameCheap_Provider extends Base_Service_Provider {
 					'endpoint' => $endpoint,
 				)
 			);
+			\Reseller_Panel\Logger::log_error( 'NameCheap', $error->get_error_message(), array( 'command' => $command, 'http_code' => $http_code ) );
+			return $error;
 		}
 
-		return $this->parse_xml_response( $body );
+		$parsed = $this->parse_xml_response( $body );
+
+		// Log parsing errors
+		if ( is_wp_error( $parsed ) ) {
+			\Reseller_Panel\Logger::log_error( 'NameCheap', $parsed->get_error_message(), array( 'command' => $command ) );
+		}
+
+		return $parsed;
 	}
 
 	/**

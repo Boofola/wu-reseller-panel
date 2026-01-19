@@ -130,12 +130,28 @@ class Provider_Manager {
 	public function get_configured_providers() {
 		$configured = array();
 
+		\Reseller_Panel\Logger::log_info( 'Provider_Manager', 'get_configured_providers() called', array( 'total_providers' => count( $this->providers ) ) );
+
 		foreach ( $this->providers as $key => $provider ) {
 			$provider->load_config();
-			if ( $provider->is_configured() && $provider->is_enabled() ) {
+			$is_configured = $provider->is_configured();
+			$is_enabled = $provider->is_enabled();
+
+			\Reseller_Panel\Logger::log_info(
+				'Provider_Manager',
+				sprintf( 'Checking provider: %s', $key ),
+				array(
+					'is_configured' => $is_configured ? 'yes' : 'no',
+					'is_enabled' => $is_enabled ? 'yes' : 'no',
+				)
+			);
+
+			if ( $is_configured && $is_enabled ) {
 				$configured[ $key ] = $provider;
 			}
 		}
+
+		\Reseller_Panel\Logger::log_info( 'Provider_Manager', 'get_configured_providers() result', array( 'configured_count' => count( $configured ) ) );
 
 		return $configured;
 	}

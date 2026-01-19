@@ -51,7 +51,7 @@ class Logger {
 			}
 		}
 		
-		self::$log_file = $log_dir . '/reseller-panel-errors.log';
+		self::$log_file = $log_dir . '/reseller-panel.log';
 	}
 
 	/**
@@ -64,15 +64,58 @@ class Logger {
 	 * @return void
 	 */
 	public static function log_error( $provider, $message, $context = array() ) {
+		self::log( 'ERROR', $provider, $message, $context );
+	}
+
+	/**
+	 * Log an API activity
+	 *
+	 * @param string $provider Provider name
+	 * @param string $action Action/endpoint being called
+	 * @param string $method HTTP method (GET, POST, etc.)
+	 * @param array  $context Additional context data
+	 *
+	 * @return void
+	 */
+	public static function log_api_call( $provider, $action, $method = 'POST', $context = array() ) {
+		self::log( 'API', $provider, sprintf( '%s: %s', $method, $action ), $context );
+	}
+
+	/**
+	 * Log an informational message
+	 *
+	 * @param string $provider Provider name
+	 * @param string $message Info message
+	 * @param array  $context Additional context data
+	 *
+	 * @return void
+	 */
+	public static function log_info( $provider, $message, $context = array() ) {
+		self::log( 'INFO', $provider, $message, $context );
+	}
+
+	/**
+	 * Generic log method
+	 *
+	 * @param string $level Log level (ERROR, API, INFO)
+	 * @param string $provider Provider name
+	 * @param string $message Log message
+	 * @param array  $context Additional context data
+	 *
+	 * @return void
+	 */
+	private static function log( $level, $provider, $message, $context = array() ) {
 		if ( ! self::$log_file ) {
 			self::init();
 		}
 
 		$timestamp = current_time( 'Y-m-d H:i:s' );
 		$log_entry = sprintf(
-			"[%s] Provider: %s\nError: %s\n",
+			"[%s] [%s] Provider: %s\n%s: %s\n",
 			$timestamp,
+			$level,
 			$provider,
+			$level,
 			$message
 		);
 
@@ -93,8 +136,8 @@ class Logger {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		file_put_contents( self::$log_file, $log_entry, FILE_APPEND );
 
-		// Also log to WordPress debug log if enabled
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+		// Also log to WordPress debug log if enabled (errors only)
+		if ( 'ERROR' === $level && defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
 			error_log( sprintf( 'Reseller Panel [%s] - %s', $provider, $message ) );
 		}
 	}

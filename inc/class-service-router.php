@@ -69,39 +69,99 @@ class Service_Router {
 			return new \WP_Error( 'service_disabled', sprintf( __( 'Service %s is not enabled', 'ultimate-multisite' ), $service ) );
 		}
 
-		$default_provider = $service_config->default_provider;
-		$fallback_provider = $service_config->fallback_provider;
+		// Get ranked providers (new system)
+		$providers_order = ! empty( $service_config->providers_order ) ? json_decode( $service_config->providers_order, true ) : array();
 
-		// Try primary provider first
-		$primary = $this->provider_manager->get_provider( $default_provider );
+		// Fallback to old default/fallback columns if no providers_order set
+		if ( empty( $providers_order ) ) {
+			if ( ! empty( $service_config->default_provider ) ) {
+				$providers_order[] = $service_config->default_provider;
+			}
+			if ( ! empty( $service_config->fallback_provider ) && $service_config->fallback_provider !== $service_config->default_provider ) {
+				$providers_order[] = $service_config->fallback_provider;
+			}
+		}
 
-		if ( $primary ) {
-			$result = $this->execute_provider_action( $primary, $action, $params );
+		if ( empty( $providers_order ) ) {
+			return new \WP_Error( 'no_provider', sprintf( __( 'No provider configured for service %s', 'ultimate-multisite' ), $service ) );
+		}
+
+		$last_error = null;
+		$failed_providers = array();
+
+		// Try each provider in ranked order
+		foreach ( $providers_order as $rank => $provider_key ) {
+			$provider = $this->provider_manager->get_provider( $provider_key );
+
+			if ( ! $provider ) {
+				$last_error = new \WP_Error( 'provider_not_found', sprintf( __( 'Provider %s not found', 'ultimate-multisite' ), $provider_key ) );
+				$failed_providers[] = array(
+					'key' => $provider_key,
+					'rank' => $rank + 1,
+					'error' => 'not_found',
+				);
+				continue;
+			}
+
+			// Log provider attempt
+			\Reseller_Panel\Logger::log_info(
+				'Service_Router',
+				sprintf( 'Attempting provider %s (rank %d)', $provider_key, $rank + 1 ),
+				array(
+					'service' => $service,
+					'action' => $action,
+					'rank' => $rank + 1,
+				)
+			);
+
+			$result = $this->execute_provider_action( $provider, $action, $params );
 
 			if ( ! is_wp_error( $result ) ) {
+				// Success! Log if fallback was used
+				if ( $rank > 0 ) {
+					$this->log_fallback_event( $service, $providers_order[0], $provider_key, $last_error ? $last_error->get_error_message() : 'Primary provider failed' );
+					$this->send_fallback_notification( $service, $providers_order[0], $provider_key, $rank, $last_error );
+				}
+
 				return $result;
 			}
 
-			// Primary failed, try fallback if available
-			if ( $fallback_provider && $fallback_provider !== $default_provider ) {
-				$this->log_fallback( $service, $default_provider, $fallback_provider, $result->get_error_message() );
-				$this->send_admin_notification( $service, $default_provider, $fallback_provider, $result );
+			$last_error = $result;
+			$failed_providers[] = array(
+				'key' => $provider_key,
+				'rank' => $rank + 1,
+				'error' => $result->get_error_code(),
+			);
 
-				$fallback = $this->provider_manager->get_provider( $fallback_provider );
-
-				if ( $fallback ) {
-					$result = $this->execute_provider_action( $fallback, $action, $params );
-
-					if ( ! is_wp_error( $result ) ) {
-						return $result;
-					}
-				}
-			}
-
-			return $result;
+			\Reseller_Panel\Logger::log_error(
+				'Service_Router',
+				sprintf( 'Provider %s (rank %d) failed', $provider_key, $rank + 1 ),
+				array(
+					'service' => $service,
+					'error' => $result->get_error_code(),
+					'message' => $result->get_error_message(),
+				)
+			);
 		}
 
-		return new \WP_Error( 'no_provider', sprintf( __( 'No provider configured for service %s', 'ultimate-multisite' ), $service ) );
+		// All providers exhausted
+		$error_message = sprintf(
+			__( 'All providers exhausted for service %s after %d attempts', 'ultimate-multisite' ),
+			$service,
+			count( $providers_order )
+		);
+
+		\Reseller_Panel\Logger::log_error(
+			'Service_Router',
+			$error_message,
+			array(
+				'service' => $service,
+				'providers_attempted' => count( $providers_order ),
+				'failed_providers' => wp_json_encode( $failed_providers ),
+			)
+		);
+
+		return $last_error ?: new \WP_Error( 'all_providers_failed', $error_message );
 	}
 
 	/**
@@ -146,7 +206,7 @@ class Service_Router {
 	 *
 	 * @return bool
 	 */
-	private function log_fallback( $service, $primary_provider, $fallback_provider, $error_message ) {
+	private function log_fallback_event( $service, $primary_provider, $fallback_provider, $error_message ) {
 		global $wpdb;
 
 		$log_data = array(
@@ -203,11 +263,12 @@ class Service_Router {
 	 * @param string $service Service key
 	 * @param string $primary_provider Primary provider key
 	 * @param string $fallback_provider Fallback provider key
+	 * @param int $fallback_rank Rank of the fallback provider
 	 * @param WP_Error $error Error object
 	 *
 	 * @return bool
 	 */
-	private function send_admin_notification( $service, $primary_provider, $fallback_provider, $error ) {
+	private function send_fallback_notification( $service, $primary_provider, $fallback_provider, $fallback_rank, $error ) {
 		$admin_email = get_site_option( 'admin_email' );
 
 		if ( ! $admin_email ) {
@@ -223,11 +284,16 @@ class Service_Router {
 			$site_name
 		);
 
+		$rank_text = sprintf(
+			__( 'rank #%d', 'ultimate-multisite' ),
+			$fallback_rank + 1
+		);
+
 		$message = sprintf(
 			__(
 				"A fallback event was triggered for the '%s' service.\n\n" .
 				"Primary Provider: %s\n" .
-				"Fallback Provider: %s\n" .
+				"Fallback Provider: %s (%s)\n" .
 				"Error: %s\n\n" .
 				"The request was successfully handled by the fallback provider.\n" .
 				"Please investigate the primary provider to prevent future fallbacks.",
@@ -236,10 +302,22 @@ class Service_Router {
 			$service,
 			$primary_name,
 			$fallback_name,
-			$error->get_error_message()
+			$rank_text,
+			$error ? $error->get_error_message() : __( 'Primary provider failed', 'ultimate-multisite' )
 		);
 
 		$message .= "\n\n" . __( 'Admin URL:', 'ultimate-multisite' ) . ' ' . network_admin_url( 'admin.php?page=reseller-panel-services' );
+
+		\Reseller_Panel\Logger::log_info(
+			'Service_Router',
+			'Sending fallback notification',
+			array(
+				'admin_email' => $admin_email,
+				'service' => $service,
+				'primary' => $primary_provider,
+				'fallback' => $fallback_provider,
+			)
+		);
 
 		return wp_mail( $admin_email, $subject, $message );
 	}

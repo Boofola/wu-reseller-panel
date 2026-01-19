@@ -77,14 +77,35 @@ class Services_Settings_Page extends Admin_Page {
 			foreach ( $_POST['services'] as $service_key => $service_data ) {
 				$service_data = array_map( 'sanitize_text_field', $service_data );
 
+				// Handle providers_order (ranked list of providers)
+				$providers_order = array();
+				if ( isset( $service_data['providers_order'] ) && is_array( $service_data['providers_order'] ) ) {
+					$providers_order = array_filter( $service_data['providers_order'] );
+				}
+
+				// For backward compatibility, also save default_provider and fallback_provider
+				$default_provider = ! empty( $providers_order ) ? reset( $providers_order ) : '';
+				$fallback_provider = isset( $providers_order[1] ) ? $providers_order[1] : '';
+
 				$wpdb->update(
 					$wpdb->prefix . 'reseller_panel_services',
 					array(
 						'enabled' => isset( $service_data['enabled'] ) ? 1 : 0,
-						'default_provider' => $service_data['default_provider'] ?? '',
-						'fallback_provider' => $service_data['fallback_provider'] ?? '',
+						'default_provider' => $default_provider,
+						'fallback_provider' => $fallback_provider,
+						'providers_order' => ! empty( $providers_order ) ? wp_json_encode( $providers_order ) : null,
 					),
 					array( 'service_key' => sanitize_key( $service_key ) )
+				);
+
+				\Reseller_Panel\Logger::log_info(
+					'Services_Settings',
+					sprintf( 'Service %s updated', $service_key ),
+					array(
+						'enabled' => isset( $service_data['enabled'] ) ? '1' : '0',
+						'providers_count' => count( $providers_order ),
+						'providers' => implode( ', ', $providers_order ),
+					)
 				);
 			}
 		}
@@ -152,8 +173,7 @@ class Services_Settings_Page extends Admin_Page {
 						<tr>
 							<th scope="col"><?php esc_html_e( 'Service', 'ultimate-multisite' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Enabled', 'ultimate-multisite' ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Default Provider', 'ultimate-multisite' ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Fallback Provider', 'ultimate-multisite' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Ranked Providers', 'ultimate-multisite' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Status', 'ultimate-multisite' ); ?></th>
 						</tr>
 					</thead>
@@ -161,18 +181,30 @@ class Services_Settings_Page extends Admin_Page {
 						<?php if ( ! empty( $services ) ) : ?>
 							<?php foreach ( $services as $service ) : ?>
 								<?php
-									$default_providers = array();
-									$fallback_providers = array();
+									$available_providers = array();
 
-									// Use configured providers (which includes enabled check)
+									// Get available providers that support this service
 									foreach ( $configured_providers as $provider ) {
 										if ( $provider->supports_service( $service->service_key ) ) {
-											$default_providers[ $provider->get_key() ] = $provider->get_name();
-											$fallback_providers[ $provider->get_key() ] = $provider->get_name();
+											$available_providers[ $provider->get_key() ] = $provider->get_name();
 										}
 									}
 
-									$has_providers = ! empty( $default_providers );
+									// Get current ranked providers
+									$providers_order = ! empty( $service->providers_order ) ? json_decode( $service->providers_order, true ) : array();
+									if ( ! is_array( $providers_order ) ) {
+										$providers_order = array();
+									}
+
+									// For backward compatibility, use default_provider and fallback_provider if providers_order is empty
+									if ( empty( $providers_order ) && ! empty( $service->default_provider ) ) {
+										$providers_order[] = $service->default_provider;
+										if ( ! empty( $service->fallback_provider ) && $service->fallback_provider !== $service->default_provider ) {
+											$providers_order[] = $service->fallback_provider;
+										}
+									}
+
+									$has_providers = ! empty( $available_providers );
 								?>
 								<tr>
 									<td><?php echo esc_html( $service->service_name ); ?></td>
@@ -181,28 +213,45 @@ class Services_Settings_Page extends Admin_Page {
 									</td>
 									<td>
 										<?php if ( $has_providers ) : ?>
-											<select name="services[<?php echo esc_attr( $service->service_key ); ?>][default_provider]">
-												<option value="">-- <?php esc_html_e( 'Select', 'ultimate-multisite' ); ?> --</option>
-												<?php foreach ( $default_providers as $key => $name ) : ?>
-													<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $service->default_provider, $key ); ?>>
-														<?php echo esc_html( $name ); ?>
-													</option>
-												<?php endforeach; ?>
-											</select>
+											<div class="reseller-panel-provider-ranking" data-service-key="<?php echo esc_attr( $service->service_key ); ?>">
+												<ul class="provider-list sortable" style="list-style: none; padding: 0; margin: 0;">
+													<?php
+														$rank = 1;
+														foreach ( $providers_order as $provider_key ) {
+															if ( isset( $available_providers[ $provider_key ] ) ) {
+																echo '<li class="provider-item" data-provider-key="' . esc_attr( $provider_key ) . '" style="padding: 8px; margin-bottom: 5px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: move; display: flex; align-items: center;">';
+																echo '<span class="rank-number" style="display: inline-block; width: 24px; margin-right: 8px; font-weight: bold; color: #0073aa;">' . esc_html( $rank ) . '.</span>';
+																echo '<span class="dashicons dashicons-move" style="margin-right: 8px; color: #999;"></span>';
+																echo '<span class="provider-name">' . esc_html( $available_providers[ $provider_key ] ) . '</span>';
+																echo '<input type="hidden" name="services[' . esc_attr( $service->service_key ) . '][providers_order][]" value="' . esc_attr( $provider_key ) . '" />';
+																echo '</li>';
+																$rank++;
+															}
+														}
+													?>
+												</ul>
+
+												<div style="margin-top: 10px;">
+													<label for="add-provider-<?php echo esc_attr( $service->service_key ); ?>" style="display: block; margin-bottom: 5px; font-weight: bold;">
+														<?php esc_html_e( 'Add Provider:', 'ultimate-multisite' ); ?>
+													</label>
+													<div style="display: flex; gap: 5px;">
+														<select id="add-provider-<?php echo esc_attr( $service->service_key ); ?>" class="add-provider-select" data-service-key="<?php echo esc_attr( $service->service_key ); ?>" style="flex: 1;">
+															<option value="">-- <?php esc_html_e( 'Select a provider', 'ultimate-multisite' ); ?> --</option>
+															<?php foreach ( $available_providers as $key => $name ) : ?>
+																<?php if ( ! in_array( $key, $providers_order, true ) ) : ?>
+																	<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $name ); ?></option>
+																<?php endif; ?>
+															<?php endforeach; ?>
+														</select>
+														<button type="button" class="button add-provider-btn" data-service-key="<?php echo esc_attr( $service->service_key ); ?>">
+															<?php esc_html_e( 'Add', 'ultimate-multisite' ); ?>
+														</button>
+													</div>
+												</div>
+											</div>
 										<?php else : ?>
 											<span class="description"><?php esc_html_e( 'No providers available', 'ultimate-multisite' ); ?></span>
-										<?php endif; ?>
-									</td>
-									<td>
-										<?php if ( $has_providers ) : ?>
-											<select name="services[<?php echo esc_attr( $service->service_key ); ?>][fallback_provider]">
-												<option value="">-- <?php esc_html_e( 'None', 'ultimate-multisite' ); ?> --</option>
-												<?php foreach ( $fallback_providers as $key => $name ) : ?>
-													<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $service->fallback_provider, $key ); ?>>
-														<?php echo esc_html( $name ); ?>
-													</option>
-												<?php endforeach; ?>
-											</select>
 										<?php endif; ?>
 									</td>
 									<td>
@@ -210,8 +259,8 @@ class Services_Settings_Page extends Admin_Page {
 											<span class="dashicons dashicons-warning" title="<?php esc_attr_e( 'No compatible providers configured', 'ultimate-multisite' ); ?>"></span>
 										<?php elseif ( ! $service->enabled ) : ?>
 											<span class="dashicons dashicons-marker" title="<?php esc_attr_e( 'Disabled', 'ultimate-multisite' ); ?>"></span>
-										<?php elseif ( empty( $service->default_provider ) ) : ?>
-											<span class="dashicons dashicons-warning" title="<?php esc_attr_e( 'No default provider selected', 'ultimate-multisite' ); ?>"></span>
+										<?php elseif ( empty( $providers_order ) ) : ?>
+											<span class="dashicons dashicons-warning" title="<?php esc_attr_e( 'No providers selected', 'ultimate-multisite' ); ?>"></span>
 										<?php else : ?>
 											<span class="dashicons dashicons-yes" title="<?php esc_attr_e( 'Configured', 'ultimate-multisite' ); ?>"></span>
 										<?php endif; ?>
@@ -220,7 +269,7 @@ class Services_Settings_Page extends Admin_Page {
 							<?php endforeach; ?>
 						<?php else : ?>
 							<tr>
-								<td colspan="5">
+								<td colspan="4">
 									<?php esc_html_e( 'No services configured', 'ultimate-multisite' ); ?>
 								</td>
 							</tr>
@@ -234,9 +283,151 @@ class Services_Settings_Page extends Admin_Page {
 			</form>
 
 			<div class="reseller-panel-help">
-				<h3><?php esc_html_e( 'How Fallback Works', 'ultimate-multisite' ); ?></h3>
-				<p><?php esc_html_e( 'When a service request is made, the system will first try to use the default provider. If that provider fails, it will automatically fall back to the fallback provider if one is configured. An email notification will be sent to the admin email address when a fallback occurs.', 'ultimate-multisite' ); ?></p>
+				<h3><?php esc_html_e( 'Multi-Provider Ranking System', 'ultimate-multisite' ); ?></h3>
+				<p><?php esc_html_e( 'Drag and drop providers to rank them in the order you want them to be tried. The first provider in the list is the default provider. If it fails, the system will automatically try the next provider in the list as a fallback. This continues until all providers have been exhausted or one succeeds.', 'ultimate-multisite' ); ?></p>
+				<p><?php esc_html_e( 'An email notification will be sent to the admin email address when a fallback provider is used, including details about which provider failed and which fallback provider was used.', 'ultimate-multisite' ); ?></p>
 			</div>
+
+			<script>
+				jQuery(function($) {
+					// Initialize sortable lists for provider ranking
+					$('.provider-list.sortable').sortable({
+						placeholder: 'sortable-placeholder',
+						items: '> .provider-item',
+						update: function() {
+							updateRankNumbers($(this));
+						}
+					});
+
+					// Function to update rank numbers after sorting
+					function updateRankNumbers($list) {
+						$list.find('.rank-number').each(function(index) {
+							$(this).text((index + 1) + '.');
+						});
+					}
+
+					// Handle adding a provider
+					$('.add-provider-btn').on('click', function(e) {
+						e.preventDefault();
+						var serviceKey = $(this).data('service-key');
+						var selectBox = $('#add-provider-' + serviceKey);
+						var providerKey = selectBox.val();
+
+						if (!providerKey) {
+							alert('<?php esc_attr_e( 'Please select a provider', 'ultimate-multisite' ); ?>');
+							return;
+						}
+
+						var providerName = selectBox.find('option:selected').text();
+						var $list = $('.provider-list[data-service-key="' + serviceKey + '"]');
+						
+						// Check if provider is already in the list
+						if ($list.find('[data-provider-key="' + providerKey + '"]').length > 0) {
+							alert('<?php esc_attr_e( 'This provider is already in the list', 'ultimate-multisite' ); ?>');
+							return;
+						}
+
+						// Create new list item
+						var $newItem = $('<li class="provider-item" data-provider-key="' + providerKey + '" style="padding: 8px; margin-bottom: 5px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: move; display: flex; align-items: center;">' +
+							'<span class="rank-number" style="display: inline-block; width: 24px; margin-right: 8px; font-weight: bold; color: #0073aa;"></span>' +
+							'<span class="dashicons dashicons-move" style="margin-right: 8px; color: #999;"></span>' +
+							'<span class="provider-name">' + providerName + '</span>' +
+							'<input type="hidden" name="services[' + serviceKey + '][providers_order][]" value="' + providerKey + '" />' +
+							'<button type="button" class="button button-link-delete" style="margin-left: auto;" title="<?php esc_attr_e( 'Remove provider', 'ultimate-multisite' ); ?>">Remove</button>' +
+							'</li>');
+
+						$list.append($newItem);
+						updateRankNumbers($list);
+
+						// Remove option from select and reset
+						selectBox.find('option[value="' + providerKey + '"]').remove();
+						selectBox.val('').trigger('change');
+					});
+
+					// Handle removing a provider
+					$(document).on('click', '.provider-item .button-link-delete', function(e) {
+						e.preventDefault();
+						var $item = $(this).closest('.provider-item');
+						var $list = $item.closest('.provider-list');
+						var serviceKey = $list.data('service-key');
+						var providerKey = $item.data('provider-key');
+						var providerName = $item.find('.provider-name').text();
+
+						$item.remove();
+						updateRankNumbers($list);
+
+						// Add option back to select
+						var selectBox = $('#add-provider-' + serviceKey);
+						selectBox.append('<option value="' + providerKey + '">' + providerName + '</option>');
+						selectBox.find('option').sort(function(a, b) {
+							return $(a).text() > $(b).text() ? 1 : -1;
+						}).appendTo(selectBox);
+					});
+
+					// Update hidden inputs when list is reordered
+					$('.provider-list.sortable').on('sortupdate', function() {
+						var serviceKey = $(this).closest('.reseller-panel-provider-ranking').data('service-key');
+						var $list = $(this);
+						var providers = [];
+
+						$list.find('.provider-item').each(function() {
+							providers.push($(this).data('provider-key'));
+						});
+
+						$list.closest('.reseller-panel-provider-ranking').find('input[name*="providers_order"]').remove();
+
+						providers.forEach(function(providerKey) {
+							$list.find('[data-provider-key="' + providerKey + '"]').append(
+								'<input type="hidden" name="services[' + serviceKey + '][providers_order][]" value="' + providerKey + '" />'
+							);
+						});
+					});
+				});
+			</script>
+
+			<style>
+				.reseller-panel-provider-ranking {
+					padding: 10px;
+					background: #fff;
+					border: 1px solid #ddd;
+					border-radius: 4px;
+				}
+
+				.provider-list {
+					margin-bottom: 10px;
+				}
+
+				.provider-item {
+					transition: opacity 0.2s;
+				}
+
+				.provider-item:hover {
+					background-color: #efefef !important;
+				}
+
+				.provider-item.ui-sortable-helper {
+					opacity: 0.7;
+				}
+
+				.sortable-placeholder {
+					background: #e8e8e8;
+					border: 1px dashed #999;
+					margin-bottom: 5px;
+					height: 36px;
+					border-radius: 4px;
+				}
+
+				.provider-item .button-link-delete {
+					padding: 0;
+					height: auto;
+					font-size: 12px;
+					color: #dc3545;
+				}
+
+				.provider-item .button-link-delete:hover {
+					color: #c82333;
+				}
+			</style>
 		</div>
 		<?php
 	}

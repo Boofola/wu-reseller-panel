@@ -122,7 +122,21 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 * @return bool
 	 */
 	public function is_configured() {
-		return ! empty( $this->config ) && ! empty( $this->get_config_value( 'api_key' ) );
+		$has_config = ! empty( $this->config );
+		$has_api_key = ! empty( $this->get_config_value( 'api_key' ) );
+		$result = $has_config && $has_api_key;
+
+		\Reseller_Panel\Logger::log_info(
+			$this->name,
+			'is_configured() check',
+			array(
+				'has_config' => $has_config ? 'yes' : 'no',
+				'has_api_key' => $has_api_key ? 'yes' : 'no',
+				'result' => $result ? 'yes' : 'no',
+			)
+		);
+
+		return $result;
 	}
 
 	/**
@@ -132,7 +146,18 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 */
 	public function is_enabled() {
 		// Default to true for backward compatibility
-		return (bool) $this->get_config_value( 'enabled', true );
+		$enabled = (bool) $this->get_config_value( 'enabled', true );
+
+		\Reseller_Panel\Logger::log_info(
+			$this->name,
+			'is_enabled() check',
+			array(
+				'enabled_value' => $this->get_config_value( 'enabled', 'not_set' ),
+				'result' => $enabled ? 'yes' : 'no',
+			)
+		);
+
+		return $enabled;
 	}
 
 	/**
