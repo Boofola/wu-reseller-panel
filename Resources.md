@@ -20,3 +20,5 @@ OpenSRS (TuCows) API Guide for Emails: https://email.opensrs.guide/
 
 NameCheap API Guide: https://www.namecheap.com/support/api/intro/
 
+Previous Work on Reseller Plugin: https://github.com/Multisite-Ultimate/multisite-ultimate-domain-seller
+
