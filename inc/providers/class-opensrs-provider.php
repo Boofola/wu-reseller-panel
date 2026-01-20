@@ -70,6 +70,11 @@ class OpenSRS_Provider extends Base_Service_Provider implements Domain_Importer_
 				'default' => 'test',
 				'description' => __( 'Use Sandbox for testing, Production for live transactions', 'ultimate-multisite' ),
 			),
+			'domain_fee' => array(
+				'label' => __( 'Domain Markup Fee (Optional)', 'ultimate-multisite' ),
+				'type' => 'text',
+				'description' => __( 'Additional fee or markup to add to all domain prices (e.g., 2.50 for $2.50 per domain). Leave empty for no markup.', 'ultimate-multisite' ),
+			),
 		);
 	}
 
@@ -403,6 +408,117 @@ XML;
 			);
 		}
 
+		// Extract nested data structures (for GET_TLDLIST and similar responses)
+		// Look for dt_array and dt_assoc structures
+		$this->extract_nested_xml_data( $xpath, $result );
+
+		return $result;
+	}
+
+	/**
+	 * Extract nested XML data from OpenSRS response
+	 *
+	 * Handles dt_array and dt_assoc structures
+	 *
+	 * @param DOMXPath $xpath XPath instance
+	 * @param array    &$result Reference to result array to populate
+	 *
+	 * @return void
+	 */
+	private function extract_nested_xml_data( $xpath, &$result ) {
+		// Get all data items with keys
+		$items = $xpath->query( '//item[@key]' );
+
+		foreach ( $items as $item ) {
+			$key = $item->getAttribute( 'key' );
+			
+			// Skip already processed items
+			if ( in_array( $key, array( 'is_success', 'response_code', 'response_text' ), true ) ) {
+				continue;
+			}
+
+			// Check if this item contains nested data (dt_array or dt_assoc)
+			$dt_array = $item->getElementsByTagName( 'dt_array' )->length > 0;
+			$dt_assoc = $item->getElementsByTagName( 'dt_assoc' )->length > 0;
+
+			if ( $dt_array ) {
+				// Parse dt_array (indexed array)
+				$result[ $key ] = $this->parse_dt_array( $item );
+			} elseif ( $dt_assoc ) {
+				// Parse dt_assoc (associative array)
+				$result[ $key ] = $this->parse_dt_assoc( $item );
+			} else {
+				// Simple text value
+				$result[ $key ] = $item->nodeValue;
+			}
+		}
+	}
+
+	/**
+	 * Parse dt_array from OpenSRS XML
+	 *
+	 * @param DOMElement $element The dt_array element
+	 *
+	 * @return array
+	 */
+	private function parse_dt_array( $element ) {
+		$result = array();
+		$dt_array = $element->getElementsByTagName( 'dt_array' )->item( 0 );
+
+		if ( ! $dt_array ) {
+			return $result;
+		}
+
+		foreach ( $dt_array->childNodes as $child ) {
+			if ( $child->nodeType !== XML_ELEMENT_NODE ) {
+				continue;
+			}
+
+			$key = $child->getAttribute( 'key' );
+			
+			if ( $child->getElementsByTagName( 'dt_array' )->length > 0 ) {
+				$result[ $key ] = $this->parse_dt_array( $child );
+			} elseif ( $child->getElementsByTagName( 'dt_assoc' )->length > 0 ) {
+				$result[ $key ] = $this->parse_dt_assoc( $child );
+			} else {
+				$result[ $key ] = $child->nodeValue;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Parse dt_assoc from OpenSRS XML
+	 *
+	 * @param DOMElement $element The dt_assoc element or parent with dt_assoc child
+	 *
+	 * @return array
+	 */
+	private function parse_dt_assoc( $element ) {
+		$result = array();
+		$dt_assoc = $element->getElementsByTagName( 'dt_assoc' )->item( 0 );
+
+		if ( ! $dt_assoc ) {
+			return $result;
+		}
+
+		foreach ( $dt_assoc->childNodes as $child ) {
+			if ( $child->nodeType !== XML_ELEMENT_NODE ) {
+				continue;
+			}
+
+			$key = $child->getAttribute( 'key' );
+			
+			if ( $child->getElementsByTagName( 'dt_array' )->length > 0 ) {
+				$result[ $key ] = $this->parse_dt_array( $child );
+			} elseif ( $child->getElementsByTagName( 'dt_assoc' )->length > 0 ) {
+				$result[ $key ] = $this->parse_dt_assoc( $child );
+			} else {
+				$result[ $key ] = $child->nodeValue;
+			}
+		}
+
 		return $result;
 	}
 
@@ -485,15 +601,28 @@ XML;
 		// Extract and format domain list
 		$domains = array();
 
+		// Get domain markup fee if configured
+		$domain_fee = floatval( $this->get_config_value( 'domain_fee', 0 ) );
+
 		if ( isset( $response['tld_list'] ) && is_array( $response['tld_list'] ) ) {
 			foreach ( $response['tld_list'] as $tld => $data ) {
+				// Get base prices
+				$registration_price = isset( $data['registration_price'] ) ? floatval( $data['registration_price'] ) : 0;
+				$renewal_price = isset( $data['renewal_price'] ) ? floatval( $data['renewal_price'] ) : 0;
+				$transfer_price = isset( $data['transfer_price'] ) ? floatval( $data['transfer_price'] ) : 0;
+
+				// Apply domain fee to all prices
+				$registration_price = $registration_price + $domain_fee;
+				$renewal_price = $renewal_price + $domain_fee;
+				$transfer_price = $transfer_price + $domain_fee;
+
 				$domains[] = array(
 					'tld'                 => sanitize_key( $tld ),
 					'name'                => '.' . sanitize_text_field( $tld ),
-					'price'               => isset( $data['price'] ) ? floatval( $data['price'] ) : 0,
-					'registration_price'  => isset( $data['registration_price'] ) ? floatval( $data['registration_price'] ) : 0,
-					'renewal_price'       => isset( $data['renewal_price'] ) ? floatval( $data['renewal_price'] ) : 0,
-					'transfer_price'      => isset( $data['transfer_price'] ) ? floatval( $data['transfer_price'] ) : 0,
+					'price'               => $registration_price, // Use registration price as the base
+					'registration_price'  => $registration_price,
+					'renewal_price'       => $renewal_price,
+					'transfer_price'      => $transfer_price,
 				);
 			}
 		}

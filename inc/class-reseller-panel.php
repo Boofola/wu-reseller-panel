@@ -517,6 +517,9 @@ require_once \ABSPATH . 'wp-admin/includes/upgrade.php';
 	// Add providers_order column if it doesn't exist (for multi-provider ranking)
 	$this->add_providers_order_column();
 
+	// Populate default services if they don't exist
+	$this->populate_default_services();
+
 	// Log table creation for debugging
 	\error_log( 'Reseller Panel - Database tables created/verified' );
 }
@@ -621,6 +624,82 @@ private function migrate_providers_to_json() {
 	} catch ( \Exception $e ) {
 		$wpdb->query( 'ROLLBACK' );
 		\error_log( 'Reseller Panel - Exception during provider migration: ' . $e->getMessage() );
+	}
+}
+
+/**
+ * Populate default services in the database
+ *
+ * @return void
+ */
+private function populate_default_services() {
+	global $wpdb;
+
+	$services_table = $wpdb->prefix . 'reseller_panel_services';
+
+	// Default services to create
+	$default_services = array(
+		array(
+			'service_key' => 'domains',
+			'service_name' => 'Domains',
+			'description' => 'Register, manage, and renew domain names',
+			'enabled' => 0,
+		),
+		array(
+			'service_key' => 'ssl',
+			'service_name' => 'SSL Certificates',
+			'description' => 'SSL certificates for domain security',
+			'enabled' => 0,
+		),
+		array(
+			'service_key' => 'hosting',
+			'service_name' => 'Hosting',
+			'description' => 'Web hosting services',
+			'enabled' => 0,
+		),
+		array(
+			'service_key' => 'emails',
+			'service_name' => 'Email',
+			'description' => 'Email services',
+			'enabled' => 0,
+		),
+		array(
+			'service_key' => 'marketing',
+			'service_name' => 'Marketing',
+			'description' => 'Marketing services',
+			'enabled' => 0,
+		),
+	);
+
+	// Insert services if they don't already exist
+	foreach ( $default_services as $service ) {
+		$exists = $wpdb->get_var( 
+			$wpdb->prepare( 
+				"SELECT id FROM {$services_table} WHERE service_key = %s",
+				$service['service_key']
+			)
+		);
+
+		if ( ! $exists ) {
+			$result = $wpdb->insert(
+				$services_table,
+				array(
+					'service_key' => $service['service_key'],
+					'service_name' => $service['service_name'],
+					'description' => $service['description'],
+					'enabled' => $service['enabled'],
+					'default_provider' => null,
+					'fallback_provider' => null,
+				),
+				array( '%s', '%s', '%s', '%d', '%s', '%s' )
+			);
+
+			if ( false === $result ) {
+				\error_log( 'Reseller Panel - Failed to insert service ' . $service['service_key'] . ': ' . $wpdb->last_error );
+			} else {
+				\error_log( 'Reseller Panel - Created default service: ' . $service['service_name'] );
+			}
+		}
 	}
 }
 }

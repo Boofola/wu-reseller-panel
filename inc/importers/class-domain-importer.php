@@ -69,14 +69,42 @@ class Domain_Importer {
 			'details'   => array(),
 		);
 
+		\Reseller_Panel\Logger::log_info(
+			'Domain_Importer',
+			'Starting domain import from provider: ' . $this->provider->get_name(),
+			array( 'provider_key' => $this->provider->get_key() )
+		);
+
 		// Get domains from provider
 		$domains = $this->provider->get_domains();
 
 		if ( is_wp_error( $domains ) ) {
+			\Reseller_Panel\Logger::log_error(
+				'Domain_Importer',
+				'Error getting domains from provider: ' . $domains->get_error_message(),
+				array(
+					'provider_key' => $this->provider->get_key(),
+					'error_code' => $domains->get_error_code(),
+				)
+			);
 			return $domains;
 		}
 
+		\Reseller_Panel\Logger::log_info(
+			'Domain_Importer',
+			'Retrieved domains from provider',
+			array(
+				'provider_key' => $this->provider->get_key(),
+				'domain_count' => is_array( $domains ) ? count( $domains ) : 0,
+			)
+		);
+
 		if ( empty( $domains ) ) {
+			\Reseller_Panel\Logger::log_warning(
+				'Domain_Importer',
+				'No domains found from provider - check provider API response',
+				array( 'provider_key' => $this->provider->get_key() )
+			);
 			return new \WP_Error(
 				'no_domains',
 				__( 'No domains found from provider', 'ultimate-multisite' )
@@ -87,6 +115,18 @@ class Domain_Importer {
 		foreach ( $domains as $domain_data ) {
 			$this->import_domain( $domain_data );
 		}
+
+		\Reseller_Panel\Logger::log_info(
+			'Domain_Importer',
+			'Domain import completed',
+			array(
+				'provider_key' => $this->provider->get_key(),
+				'imported' => $this->results['imported'],
+				'updated' => $this->results['updated'],
+				'skipped' => $this->results['skipped'],
+				'errors' => count( $this->results['errors'] ),
+			)
+		);
 
 		return $this->get_results();
 	}
