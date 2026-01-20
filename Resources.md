@@ -14,7 +14,9 @@ WordPress Plugin Ultimate Multisite: https://wordpress.org/plugins/ultimate-mult
 
 Ultimate Multisite Git Mirror: https://github.com/Multisite-Ultimate/ultimate-multisite
 
-OpenSRS (TuCows) API Guide: https://domains.opensrs.guide/
+OpenSRS (TuCows) API Guide for Domains and SSL: https://domains.opensrs.guide/
+
+OpenSRS (TuCows) API Guide for Emails: https://email.opensrs.guide/
 
 NameCheap API Guide: https://www.namecheap.com/support/api/intro/
 
