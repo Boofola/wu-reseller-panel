@@ -77,6 +77,7 @@ require_once RESELLER_PANEL_PATH . 'inc/class-dns-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-transfer-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-renewal-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-checkout-integration.php';
+require_once RESELLER_PANEL_PATH . 'inc/class-customer-portal.php';
 
 // Admin pages
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
@@ -126,6 +127,7 @@ DNS_Manager::get_instance();
 Domain_Transfer_Manager::get_instance();
 Domain_Renewal_Manager::get_instance();
 Checkout_Integration::get_instance();
+Customer_Portal::get_instance();
 
 // Initialize admin pages
 Admin_Pages\Services_Settings_Page::get_instance();
