@@ -437,9 +437,15 @@ class DNS_Manager {
 			return true;
 		}
 
+		// Check if DNS management is globally enabled
+		$dns_enabled = get_site_option( 'rp_enable_dns_management', true );
+		if ( ! $dns_enabled ) {
+			return false;
+		}
+
 		// Check if customer DNS management is enabled
-		$enabled = get_site_option( 'reseller_panel_enable_customer_dns', true );
-		if ( ! $enabled ) {
+		$customer_dns_enabled = get_site_option( 'reseller_panel_enable_customer_dns', true );
+		if ( ! $customer_dns_enabled ) {
 			return false;
 		}
 
