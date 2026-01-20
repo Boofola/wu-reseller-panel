@@ -1,10 +1,26 @@
 # wu-reseller-panel — Domain Manager for Ultimate Multisite
 
-Reseller Panel plugin for Ultimate Multisite - sell domains, SSL certificates, hosting, and emails through OpenSRS and NameCheap providers.
+Comprehensive domain management plugin for Ultimate Multisite - sell domains, manage DNS, handle transfers and renewals, SSL certificates, hosting, and emails through OpenSRS and NameCheap providers.
 
-## What's New in v2.0
+## What's New in v2.0.1
 
-🚀 **Complete architectural rebuild** following Ultimate Multisite (WP Ultimo) addon standards.
+🚀 **Major Feature Update** - Complete domain management suite added!
+
+### New Domain Management Features
+- **DNS Management System** - Full CRUD operations for 9 DNS record types
+- **Domain Transfer Manager** - Transfer domains in/out with status tracking
+- **Domain Renewal Manager** - Automated renewals with email notifications
+- **Enhanced Checkout** - Domain search and registration during signup
+- **Customer Portal** - Self-service domain management with shortcode
+
+### Architecture Enhancements
+- DNS Manager - Complete DNS record management (A, AAAA, CNAME, MX, TXT, NS, SRV, CAA, PTR)
+- Transfer Manager - Transfer tracking with 6 statuses and cron monitoring
+- Renewal Manager - Auto-renewal scheduling with 30/14/7-day notifications
+- Checkout Integration - Real-time domain search and pricing display
+- Customer Portal - Tabbed interface for domains, DNS, and transfers
+- 14+ AJAX Endpoints - Asynchronous operations for better UX
+- 3 Cron Jobs - Automated transfer/renewal monitoring
 
 ### Major Improvements
 - **Provider-agnostic architecture** - Service Provider Interface for infinite extensibility
@@ -27,6 +43,42 @@ Reseller Panel plugin for Ultimate Multisite - sell domains, SSL certificates, h
 5. **Hard to expand** → Created provider interface system for infinite extensibility
 
 ## Key Features
+
+### Domain Management Suite (NEW in v2.0.1)
+1. **DNS Management**
+   - Manage 9 DNS record types (A, AAAA, CNAME, MX, TXT, NS, SRV, CAA, PTR)
+   - Add, update, delete, and reset DNS records
+   - Customer-level permission controls
+   - Real-time AJAX updates
+
+2. **Domain Transfers**
+   - Transfer domains in with authorization codes
+   - Transfer domains out with EPP code generation
+   - 6 transfer statuses (pending, in_progress, completed, failed, cancelled, rejected)
+   - Automated hourly status monitoring
+   - Email notifications for status changes
+
+3. **Auto-Renewal System**
+   - Customer-controlled auto-renewal toggles
+   - Daily batch processing with cron jobs
+   - 30/14/7-day expiry notifications
+   - Renewal history tracking
+   - Failed renewal retry logic
+
+4. **Enhanced Checkout**
+   - Real-time domain availability checking
+   - Domain pricing display (registration, renewal, transfer)
+   - Registrant information auto-population
+   - Client and server-side validation
+   - Responsive checkout fields
+
+5. **Customer Portal**
+   - Shortcode: `[reseller_panel_domains]`
+   - Tabbed interface (Domains, DNS, Transfers)
+   - Domain list with status and expiry
+   - Auto-renewal toggle switches
+   - DNS record management
+   - Transfer in/out functionality
 
 ### Built-in Providers
 1. **OpenSRS (TuCows)**

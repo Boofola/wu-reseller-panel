@@ -128,10 +128,12 @@ private function init_components() {
 // Initialize provider manager
 Provider_Manager::get_instance();
 
-// Initialize managers
+// Initialize domain managers
 DNS_Manager::get_instance();
 Domain_Transfer_Manager::get_instance();
 Domain_Renewal_Manager::get_instance();
+Checkout_Integration::get_instance();
+Customer_Portal::get_instance();
 
 // Initialize admin pages
 Admin_Pages\Services_Settings_Page::get_instance();
