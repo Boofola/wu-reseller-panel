@@ -69,6 +69,28 @@ class Domain_Transfer_Manager {
 	}
 
 	/**
+	 * Safely log a message if Logger class is available
+	 *
+	 * @param string $level Log level (info or error)
+	 * @param string $category Log category
+	 * @param string $message Log message
+	 * @param array  $context Log context data
+	 *
+	 * @return void
+	 */
+	private function safe_log( $level, $category, $message, $context = array() ) {
+		if ( ! class_exists( 'Reseller_Panel\Logger' ) ) {
+			return;
+		}
+
+		if ( 'error' === $level ) {
+			Logger::log_error( $category, $message, $context );
+		} else {
+			Logger::log_info( $category, $message, $context );
+		}
+	}
+
+	/**
 	 * Initiate domain transfer in
 	 *
 	 * @param string $domain_name Domain name
@@ -123,7 +145,7 @@ class Domain_Transfer_Manager {
 		$result = $provider->transfer_domain( $domain_name, $auth_code, $registrant_info, $options );
 
 		if ( is_wp_error( $result ) ) {
-			Logger::log_error( 'Transfer Manager', 'Failed to initiate transfer in', array(
+			$this->safe_log( 'error', 'Transfer Manager', 'Failed to initiate transfer in', array(
 				'domain' => $domain_name,
 				'provider' => $provider_id,
 				'error' => $result->get_error_message(),
@@ -145,7 +167,7 @@ class Domain_Transfer_Manager {
 			'initiated_at' => current_time( 'mysql' ),
 		) );
 
-		Logger::log_info( 'Transfer Manager', 'Transfer in initiated', array(
+		$this->safe_log( 'info', 'Transfer Manager', 'Transfer in initiated', array(
 			'domain' => $domain_name,
 			'provider' => $provider_id,
 			'customer_id' => $customer_id,
@@ -198,7 +220,7 @@ class Domain_Transfer_Manager {
 		$auth_code_result = $provider->get_auth_code( $domain_name );
 
 		if ( is_wp_error( $auth_code_result ) ) {
-			Logger::log_error( 'Transfer Manager', 'Failed to get auth code', array(
+			$this->safe_log( 'error', 'Transfer Manager', 'Failed to get auth code', array(
 				'domain' => $domain_name,
 				'error' => $auth_code_result->get_error_message(),
 			) );
@@ -219,7 +241,7 @@ class Domain_Transfer_Manager {
 			'initiated_at' => current_time( 'mysql' ),
 		) );
 
-		Logger::log_info( 'Transfer Manager', 'Transfer out initiated', array(
+		$this->safe_log( 'info', 'Transfer Manager', 'Transfer out initiated', array(
 			'domain' => $domain_name,
 			'new_registrar' => $new_registrar,
 			'customer_id' => $customer_id,
@@ -257,7 +279,7 @@ class Domain_Transfer_Manager {
 			'cancelled_at' => current_time( 'mysql' ),
 		), true );
 
-		Logger::log_info( 'Transfer Manager', 'Transfer cancelled', array(
+		$this->safe_log( 'info', 'Transfer Manager', 'Transfer cancelled', array(
 			'domain' => $domain_name,
 			'customer_id' => $customer_id,
 		) );
@@ -277,12 +299,14 @@ class Domain_Transfer_Manager {
 		global $wpdb;
 
 		// Get all domains with pending transfers
-		$table_name = $wpdb->prefix . 'reseller_panel_domain_meta';
+		$table_name     = $wpdb->prefix . 'reseller_panel_domain_meta';
+		$status_pattern = '"status":"' . self::STATUS_PENDING . '"';
+		$status_like    = '%' . $wpdb->esc_like( $status_pattern ) . '%';
 		$pending_transfers = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT domain_id, meta_value FROM {$table_name} WHERE meta_key = %s AND meta_value LIKE %s",
 				'transfer_data',
-				'%"status":"' . self::STATUS_PENDING . '"%'
+				$status_like
 			)
 		);
 
@@ -295,7 +319,7 @@ class Domain_Transfer_Manager {
 			$this->update_transfer_status_for_domain( $metadata['domain_name'], $metadata );
 		}
 
-		Logger::log_info( 'Transfer Manager', 'Checked pending transfers', array(
+		$this->safe_log( 'info', 'Transfer Manager', 'Checked pending transfers', array(
 			'count' => count( $pending_transfers ),
 		) );
 	}
@@ -325,7 +349,7 @@ class Domain_Transfer_Manager {
 		$status_result = $provider->check_transfer_status( $domain_name, $metadata['transfer_id'] );
 
 		if ( is_wp_error( $status_result ) ) {
-			Logger::log_error( 'Transfer Manager', 'Failed to check transfer status', array(
+			$this->safe_log( 'error', 'Transfer Manager', 'Failed to check transfer status', array(
 				'domain' => $domain_name,
 				'error' => $status_result->get_error_message(),
 			) );
@@ -339,7 +363,7 @@ class Domain_Transfer_Manager {
 				'updated_at' => current_time( 'mysql' ),
 			), true );
 
-			Logger::log_info( 'Transfer Manager', 'Transfer status updated', array(
+			$this->safe_log( 'info', 'Transfer Manager', 'Transfer status updated', array(
 				'domain' => $domain_name,
 				'old_status' => $metadata['status'],
 				'new_status' => $status_result['status'],

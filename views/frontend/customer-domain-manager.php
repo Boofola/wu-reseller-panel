@@ -15,7 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Get customer domains
 $domains = isset( $domains ) ? $domains : array();
+// Tab navigation is read-only and doesn't modify data, but we sanitize the input
 $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'domains';
+// Whitelist valid tabs
+$valid_tabs = array( 'domains', 'dns', 'transfers' );
+if ( ! in_array( $active_tab, $valid_tabs, true ) ) {
+	$active_tab = 'domains';
+}
 
 ?>
 
@@ -91,13 +97,13 @@ $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'domains';
 									</td>
 									<td class="domain-actions">
 										<div class="action-buttons">
-											<button class="btn btn-sm btn-outline" onclick="manageDNS('<?php echo esc_js( $domain['name'] ); ?>')">
+											<button class="btn btn-sm btn-outline manage-dns-btn" data-domain="<?php echo esc_attr( $domain['name'] ); ?>">
 												<?php esc_html_e( 'DNS', 'ultimate-multisite' ); ?>
 											</button>
-											<button class="btn btn-sm btn-outline" onclick="renewDomain('<?php echo esc_js( $domain['name'] ); ?>')">
+											<button class="btn btn-sm btn-outline renew-domain-btn" data-domain="<?php echo esc_attr( $domain['name'] ); ?>">
 												<?php esc_html_e( 'Renew', 'ultimate-multisite' ); ?>
 											</button>
-											<button class="btn btn-sm btn-outline" onclick="transferDomain('<?php echo esc_js( $domain['name'] ); ?>')">
+											<button class="btn btn-sm btn-outline transfer-domain-btn" data-domain="<?php echo esc_attr( $domain['name'] ); ?>">
 												<?php esc_html_e( 'Transfer', 'ultimate-multisite' ); ?>
 											</button>
 										</div>

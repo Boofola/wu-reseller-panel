@@ -12,6 +12,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Initialize customer data with defaults
+if ( ! isset( $customer_data ) || ! is_array( $customer_data ) ) {
+	$customer_data = array(
+		'first_name' => '',
+		'last_name'  => '',
+		'email'      => '',
+		'address'    => '',
+		'city'       => '',
+		'state'      => '',
+		'zip'        => '',
+		'country'    => '',
+		'phone'      => '',
+	);
+}
+
 ?>
 
 <div class="reseller-panel-domain-checkout">

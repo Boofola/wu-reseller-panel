@@ -129,22 +129,18 @@
 			var isAvailable = data.available === true || data.available === 1;
 
 			if (isAvailable) {
-				$resultDiv.html(
-					'<div class="alert alert-success">' +
-					'<strong>' + window.resellerPanelCheckout.availableText + '</strong> - ' +
-					ResellerPanelCheckout.escapeHtml($('#domain_name').val()) + ' is available for registration!' +
-					'</div>'
-				);
+				var $alert = $('<div class="alert alert-success"></div>');
+				$alert.append($('<strong></strong>').text(window.resellerPanelCheckout.availableText + ' - '));
+				$alert.append(document.createTextNode(ResellerPanelCheckout.escapeHtml($('#domain_name').val()) + ' is available for registration!'));
+				$resultDiv.html('').append($alert);
 
 				// Get and display pricing
 				ResellerPanelCheckout.getDomainPricing($('#domain_name').val());
 			} else {
-				$resultDiv.html(
-					'<div class="alert alert-danger">' +
-					'<strong>' + window.resellerPanelCheckout.unavailableText + '</strong> - ' +
-					ResellerPanelCheckout.escapeHtml($('#domain_name').val()) + ' is already registered.' +
-					'</div>'
-				);
+				var $alert = $('<div class="alert alert-danger"></div>');
+				$alert.append($('<strong></strong>').text(window.resellerPanelCheckout.unavailableText + ' - '));
+				$alert.append(document.createTextNode(ResellerPanelCheckout.escapeHtml($('#domain_name').val()) + ' is already registered.'));
+				$resultDiv.html('').append($alert);
 
 				// Hide pricing
 				$('.domain-pricing-group').hide();
