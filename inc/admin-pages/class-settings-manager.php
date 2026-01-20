@@ -162,6 +162,33 @@ class Settings_Manager {
 			]
 		);
 
+		// Domain Transfers
+		wu_register_settings_field(
+			'reseller_panel',
+			'reseller_panel_enable_transfers',
+			[
+				'type'    => 'toggle',
+				'title'   => __('Enable Domain Transfers', 'ultimate-multisite'),
+				'desc'    => __('Allow customers to transfer domains in and out.', 'ultimate-multisite'),
+				'default' => true,
+				'require' => ['rp_enable' => true],
+			]
+		);
+
+		// Renewal Notice Days
+		wu_register_settings_field(
+			'reseller_panel',
+			'reseller_panel_renewal_notice_days',
+			[
+				'type'    => 'number',
+				'title'   => __('Renewal Notice Days', 'ultimate-multisite'),
+				'desc'    => __('Send renewal notifications this many days before expiration.', 'ultimate-multisite'),
+				'default' => 30,
+				'min'     => 1,
+				'max'     => 90,
+			]
+		);
+
 		// Provider Settings Header
 		wu_register_settings_field(
 			'reseller_panel',

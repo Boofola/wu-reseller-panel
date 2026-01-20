@@ -1,0 +1,282 @@
+/**
+ * Domain Checkout Styles
+ *
+ * Styling for domain registration checkout fields and search results.
+ *
+ * @package Reseller_Panel
+ */
+
+.reseller-panel-domain-checkout {
+	margin: 20px 0;
+	padding: 20px;
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.reseller-panel-domain-checkout h3 {
+	margin-top: 0;
+	margin-bottom: 15px;
+	font-size: 1.4em;
+	color: #333;
+}
+
+.reseller-panel-domain-checkout h4 {
+	margin-top: 20px;
+	margin-bottom: 15px;
+	font-size: 1.2em;
+	color: #555;
+	border-bottom: 1px solid #ddd;
+	padding-bottom: 5px;
+}
+
+/* Domain Registration Toggle */
+.domain-registration-toggle {
+	margin-bottom: 20px;
+}
+
+.domain-registration-toggle label {
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-block;
+	margin-bottom: 0;
+}
+
+.domain-registration-toggle input[type="checkbox"] {
+	margin-right: 8px;
+	vertical-align: middle;
+}
+
+/* Domain Registration Fields */
+.domain-registration-fields {
+	margin-top: 20px;
+}
+
+/* Domain Search */
+.domain-search-wrapper {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.domain-search-wrapper input[type="text"] {
+	flex: 1;
+}
+
+.domain-search-wrapper button {
+	white-space: nowrap;
+	padding: 8px 16px;
+	background: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.domain-search-wrapper button:hover {
+	background: #005177;
+}
+
+.domain-search-wrapper button:disabled {
+	background: #ccc;
+	cursor: not-allowed;
+}
+
+/* Domain Availability Result */
+.domain-availability-result {
+	margin-top: 15px;
+}
+
+.domain-availability-result .alert {
+	padding: 12px 15px;
+	margin-bottom: 15px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.domain-availability-result .alert-success {
+	color: #155724;
+	background-color: #d4edda;
+	border-color: #c3e6cb;
+}
+
+.domain-availability-result .alert-danger {
+	color: #721c24;
+	background-color: #f8d7da;
+	border-color: #f5c6cb;
+}
+
+.domain-availability-result .alert-warning {
+	color: #856404;
+	background-color: #fff3cd;
+	border-color: #ffeeba;
+}
+
+/* Spinner */
+.spinner {
+	border: 3px solid #f3f3f3;
+	border-top: 3px solid #0073aa;
+	border-radius: 50%;
+	width: 30px;
+	height: 30px;
+	animation: spin 1s linear infinite;
+	margin: 10px auto;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Domain Pricing */
+.domain-pricing-group {
+	margin-top: 20px;
+	padding: 15px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.domain-pricing h5 {
+	margin-top: 0;
+	margin-bottom: 12px;
+	font-size: 1.1em;
+}
+
+.pricing-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.pricing-table tr {
+	border-bottom: 1px solid #eee;
+}
+
+.pricing-table tr:last-child {
+	border-bottom: none;
+}
+
+.pricing-table td {
+	padding: 8px 0;
+}
+
+.pricing-table td:last-child {
+	text-align: right;
+	font-weight: 600;
+	color: #0073aa;
+}
+
+/* Registrant Information */
+.registrant-info-section {
+	margin-top: 25px;
+	padding-top: 20px;
+	border-top: 1px solid #ddd;
+}
+
+.registrant-info-section .description {
+	margin-bottom: 20px;
+	color: #666;
+	font-size: 0.95em;
+}
+
+/* Form Groups */
+.form-group {
+	margin-bottom: 20px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 5px;
+	font-weight: 600;
+	color: #333;
+}
+
+.form-group .required {
+	color: #d63638;
+}
+
+.form-group .form-control {
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #32373c;
+	background-color: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 3px;
+	box-shadow: 0 0 0 transparent;
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-group .form-control:focus {
+	border-color: #0073aa;
+	outline: 0;
+	box-shadow: 0 0 0 1px #0073aa;
+}
+
+.form-group .form-text {
+	display: block;
+	margin-top: 5px;
+	font-size: 0.9em;
+	color: #666;
+}
+
+/* Form Row */
+.form-row {
+	display: flex;
+	flex-wrap: wrap;
+	margin-right: -10px;
+	margin-left: -10px;
+}
+
+.form-row > .form-group {
+	padding-right: 10px;
+	padding-left: 10px;
+}
+
+.col-md-3 {
+	flex: 0 0 25%;
+	max-width: 25%;
+}
+
+.col-md-6 {
+	flex: 0 0 50%;
+	max-width: 50%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.domain-search-wrapper {
+		flex-direction: column;
+	}
+
+	.domain-search-wrapper button {
+		width: 100%;
+	}
+
+	.form-row {
+		flex-direction: column;
+	}
+
+	.col-md-3,
+	.col-md-6 {
+		flex: 0 0 100%;
+		max-width: 100%;
+	}
+}
+
+/* Checkbox Agreement */
+.form-group input[type="checkbox"] {
+	margin-right: 8px;
+	vertical-align: middle;
+}
+
+.form-group label input[type="checkbox"] + a {
+	color: #0073aa;
+	text-decoration: none;
+}
+
+.form-group label input[type="checkbox"] + a:hover {
+	text-decoration: underline;
+}
