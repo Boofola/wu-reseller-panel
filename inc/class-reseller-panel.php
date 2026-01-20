@@ -76,8 +76,6 @@ require_once RESELLER_PANEL_PATH . 'inc/importers/class-domain-importer.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-dns-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-transfer-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-renewal-manager.php';
-require_once RESELLER_PANEL_PATH . 'inc/class-checkout-integration.php';
-require_once RESELLER_PANEL_PATH . 'inc/class-customer-portal.php';
 
 // Admin pages
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
@@ -113,6 +111,14 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 			$page = Admin_Pages\Provider_Settings_Page::get_instance();
 			$page->handle_form_submission();
 		});
+
+		// Setup cron jobs
+		if ( ! wp_next_scheduled( 'reseller_panel_check_transfer_status' ) ) {
+			wp_schedule_event( time(), 'hourly', 'reseller_panel_check_transfer_status' );
+		}
+		if ( ! wp_next_scheduled( 'reseller_panel_domain_batch_renewal_check' ) ) {
+			wp_schedule_event( time(), 'daily', 'reseller_panel_domain_batch_renewal_check' );
+		}
 	}
 
 /**
@@ -527,6 +533,19 @@ require_once \ABSPATH . 'wp-admin/includes/upgrade.php';
 \dbDelta( $services_sql );
 \dbDelta( $providers_sql );
 	\dbDelta( $logs_sql );
+
+		// Domain metadata table
+		$domain_meta_table = $wpdb->prefix . 'reseller_panel_domain_meta';
+		$domain_meta_sql = "CREATE TABLE IF NOT EXISTS $domain_meta_table (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			domain_id bigint(20) UNSIGNED NOT NULL,
+			meta_key varchar(255) NOT NULL,
+			meta_value longtext,
+			PRIMARY KEY (id),
+			KEY domain_id (domain_id),
+			KEY meta_key (meta_key)
+		) $charset_collate;";
+		\dbDelta( $domain_meta_sql );
 
 	// Add providers_order column if it doesn't exist (for multi-provider ranking)
 	$this->add_providers_order_column();

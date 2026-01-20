@@ -1,59 +1,42 @@
 <?php
 /**
- * Domain Transfer Manager Class
- *
- * Manages domain transfer operations including transfer in/out,
- * status tracking, and authorization code management.
+ * Domain Transfer Manager - Handles domain transfer operations
  *
  * @package Reseller_Panel
  */
 
 namespace Reseller_Panel;
 
-// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
  * Domain Transfer Manager Class
- *
- * Handles domain transfer operations and monitoring.
  */
 class Domain_Transfer_Manager {
 
 	/**
+	 * Transfer status constants
+	 */
+	const STATUS_PENDING = 'pending';
+	const STATUS_IN_PROGRESS = 'in_progress';
+	const STATUS_COMPLETED = 'completed';
+	const STATUS_FAILED = 'failed';
+	const STATUS_CANCELLED = 'cancelled';
+	const STATUS_REJECTED = 'rejected';
+
+	/**
 	 * Singleton instance
 	 *
-	 * @var self
+	 * @var Domain_Transfer_Manager|null
 	 */
 	private static $instance = null;
 
 	/**
-	 * Transfer statuses
-	 *
-	 * @var array
-	 */
-	private $transfer_statuses = array(
-		'pending',
-		'in_progress',
-		'completed',
-		'failed',
-		'cancelled',
-		'rejected',
-	);
-
-	/**
-	 * Cron hook name
-	 *
-	 * @var string
-	 */
-	const CRON_HOOK = 'reseller_panel_check_transfer_status';
-
-	/**
 	 * Get singleton instance
 	 *
-	 * @return self
+	 * @return Domain_Transfer_Manager
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -63,554 +46,523 @@ class Domain_Transfer_Manager {
 	}
 
 	/**
-	 * Constructor
+	 * Constructor - private for singleton
 	 */
 	private function __construct() {
-		$this->setup_hooks();
+		$this->init_hooks();
 	}
 
 	/**
-	 * Setup WordPress hooks
-	 */
-	private function setup_hooks() {
-		// Register AJAX handlers
-		add_action( 'wp_ajax_reseller_panel_transfer_domain', array( $this, 'ajax_transfer_domain' ) );
-		add_action( 'wp_ajax_reseller_panel_check_transfer_status', array( $this, 'ajax_check_transfer_status' ) );
-		add_action( 'wp_ajax_reseller_panel_get_auth_code', array( $this, 'ajax_get_auth_code' ) );
-		add_action( 'wp_ajax_reseller_panel_cancel_transfer', array( $this, 'ajax_cancel_transfer' ) );
-
-		// Register cron job
-		add_action( self::CRON_HOOK, array( $this, 'monitor_transfers' ) );
-
-		// Schedule cron if not already scheduled
-		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			wp_schedule_event( time(), 'hourly', self::CRON_HOOK );
-		}
-	}
-
-	/**
-	 * Transfer a domain in
+	 * Initialize WordPress hooks
 	 *
-	 * @param string $domain Domain name
+	 * @return void
+	 */
+	private function init_hooks() {
+		// AJAX handlers
+		add_action( 'wp_ajax_reseller_panel_initiate_domain_transfer_in', array( $this, 'ajax_initiate_transfer_in' ) );
+		add_action( 'wp_ajax_reseller_panel_initiate_domain_transfer_out', array( $this, 'ajax_initiate_transfer_out' ) );
+		add_action( 'wp_ajax_reseller_panel_cancel_domain_transfer', array( $this, 'ajax_cancel_transfer' ) );
+		add_action( 'wp_ajax_reseller_panel_get_transfer_status', array( $this, 'ajax_get_transfer_status' ) );
+
+		// Cron hooks
+		add_action( 'reseller_panel_check_transfer_status', array( $this, 'check_pending_transfers' ) );
+	}
+
+	/**
+	 * Initiate domain transfer in
+	 *
+	 * @param string $domain_name Domain name
 	 * @param string $auth_code Authorization code
-	 * @param array  $registrant_info Registrant information
-	 * @param string $provider_key Provider key (optional)
+	 * @param int    $customer_id Customer ID
+	 * @param string $provider_id Provider ID
+	 * @param array  $options Additional options
 	 *
-	 * @return array|WP_Error Transfer result or WP_Error on failure
+	 * @return array Array with 'success' and 'data' or 'message' keys
 	 */
-	public function transfer_domain( $domain, $auth_code, $registrant_info = array(), $provider_key = null ) {
-		if ( empty( $domain ) ) {
-			return new \WP_Error( 'invalid_domain', __( 'Domain name is required', 'ultimate-multisite' ) );
+	public function initiate_transfer_in( $domain_name, $auth_code, $customer_id, $provider_id, $options = array() ) {
+		// Check if transfers are enabled
+		if ( ! get_site_option( 'reseller_panel_enable_transfers', true ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Domain transfers are currently disabled.', 'ultimate-multisite' ),
+			);
 		}
 
-		if ( empty( $auth_code ) ) {
-			return new \WP_Error( 'invalid_auth_code', __( 'Authorization code is required', 'ultimate-multisite' ) );
+		// Validate inputs
+		if ( empty( $domain_name ) || empty( $auth_code ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Domain name and authorization code are required.', 'ultimate-multisite' ),
+			);
 		}
 
 		// Get provider
-		$provider = $this->get_provider_for_domain( $domain, $provider_key );
-		if ( is_wp_error( $provider ) ) {
-			return $provider;
-		}
+		$provider_manager = Provider_Manager::get_instance();
+		$provider = $provider_manager->get_provider( $provider_id );
 
-		// Check if provider supports domain transfers
-		if ( ! method_exists( $provider, 'transfer_domain' ) ) {
-			return new \WP_Error(
-				'unsupported_operation',
-				sprintf(
-					/* translators: %s: Provider name */
-					__( 'Domain transfers are not supported by %s', 'ultimate-multisite' ),
-					$provider->get_name()
-				)
+		if ( ! $provider || ! $provider->is_configured() ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Invalid or unconfigured provider.', 'ultimate-multisite' ),
 			);
 		}
+
+		// Check transfer eligibility
+		$eligibility = $this->check_transfer_eligibility( $domain_name, $provider );
+		if ( ! $eligibility['eligible'] ) {
+			return array(
+				'success' => false,
+				'message' => $eligibility['message'],
+			);
+		}
+
+		// Prepare registrant info from customer
+		$registrant_info = isset( $options['registrant_info'] ) ? $options['registrant_info'] : array();
 
 		// Initiate transfer via provider
-		$result = $provider->transfer_domain( $domain, $auth_code, $registrant_info );
+		$result = $provider->transfer_domain( $domain_name, $auth_code, $registrant_info, $options );
 
 		if ( is_wp_error( $result ) ) {
-			Logger::log_error(
-				$provider->get_key(),
-				sprintf( 'Failed to transfer domain %s: %s', $domain, $result->get_error_message() )
+			Logger::log_error( 'Transfer Manager', 'Failed to initiate transfer in', array(
+				'domain' => $domain_name,
+				'provider' => $provider_id,
+				'error' => $result->get_error_message(),
+			) );
+
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
 			);
-			return $result;
 		}
 
-		// Store transfer record
-		$this->save_transfer_record( $domain, $provider->get_key(), 'pending', $result );
+		// Store transfer metadata
+		$this->update_transfer_metadata( $domain_name, array(
+			'status' => self::STATUS_PENDING,
+			'transfer_id' => isset( $result['transfer_id'] ) ? $result['transfer_id'] : '',
+			'provider' => $provider_id,
+			'customer_id' => $customer_id,
+			'direction' => 'in',
+			'initiated_at' => current_time( 'mysql' ),
+		) );
 
-		Logger::log_info(
-			$provider->get_key(),
-			sprintf( 'Initiated transfer for domain %s', $domain ),
-			array( 'transfer_id' => isset( $result['transfer_id'] ) ? $result['transfer_id'] : 'N/A' )
+		Logger::log_info( 'Transfer Manager', 'Transfer in initiated', array(
+			'domain' => $domain_name,
+			'provider' => $provider_id,
+			'customer_id' => $customer_id,
+		) );
+
+		return array(
+			'success' => true,
+			'data' => $result,
+			'message' => __( 'Domain transfer initiated successfully.', 'ultimate-multisite' ),
 		);
-
-		return $result;
 	}
 
 	/**
-	 * Check transfer status
+	 * Initiate domain transfer out
 	 *
-	 * @param string $domain Domain name
-	 * @param string $transfer_id Transfer ID (optional)
-	 * @param string $provider_key Provider key (optional)
+	 * @param string $domain_name Domain name
+	 * @param int    $customer_id Customer ID
+	 * @param string $new_registrar New registrar name
+	 * @param array  $options Additional options
 	 *
-	 * @return array|WP_Error Transfer status or WP_Error on failure
+	 * @return array Array with 'success' and 'data' or 'message' keys
 	 */
-	public function check_transfer_status( $domain, $transfer_id = null, $provider_key = null ) {
-		if ( empty( $domain ) ) {
-			return new \WP_Error( 'invalid_domain', __( 'Domain name is required', 'ultimate-multisite' ) );
-		}
-
-		// Get provider
-		$provider = $this->get_provider_for_domain( $domain, $provider_key );
-		if ( is_wp_error( $provider ) ) {
-			return $provider;
-		}
-
-		// Check if provider supports transfer status checking
-		if ( ! method_exists( $provider, 'check_transfer_status' ) ) {
-			return new \WP_Error(
-				'unsupported_operation',
-				sprintf(
-					/* translators: %s: Provider name */
-					__( 'Transfer status checking is not supported by %s', 'ultimate-multisite' ),
-					$provider->get_name()
-				)
+	public function initiate_transfer_out( $domain_name, $customer_id, $new_registrar, $options = array() ) {
+		// Check if transfers are enabled
+		if ( ! get_site_option( 'reseller_panel_enable_transfers', true ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Domain transfers are currently disabled.', 'ultimate-multisite' ),
 			);
 		}
 
-		// Check status via provider
-		$result = $provider->check_transfer_status( $domain, $transfer_id );
-
-		if ( is_wp_error( $result ) ) {
-			Logger::log_error(
-				$provider->get_key(),
-				sprintf( 'Failed to check transfer status for %s: %s', $domain, $result->get_error_message() )
+		// Validate inputs
+		if ( empty( $domain_name ) || empty( $new_registrar ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Domain name and new registrar are required.', 'ultimate-multisite' ),
 			);
-			return $result;
 		}
 
-		// Update transfer record if status changed
-		if ( isset( $result['status'] ) ) {
-			$this->update_transfer_status( $domain, $result['status'], $result );
+		// Get provider for this domain
+		$provider = $this->get_domain_provider( $domain_name );
+		if ( ! $provider ) {
+			return array(
+				'success' => false,
+				'message' => __( 'No configured provider found for this domain.', 'ultimate-multisite' ),
+			);
 		}
 
-		Logger::log_info(
-			$provider->get_key(),
-			sprintf( 'Checked transfer status for domain %s', $domain ),
-			array( 'status' => isset( $result['status'] ) ? $result['status'] : 'unknown' )
+		// Get auth code from provider
+		$auth_code_result = $provider->get_auth_code( $domain_name );
+
+		if ( is_wp_error( $auth_code_result ) ) {
+			Logger::log_error( 'Transfer Manager', 'Failed to get auth code', array(
+				'domain' => $domain_name,
+				'error' => $auth_code_result->get_error_message(),
+			) );
+
+			return array(
+				'success' => false,
+				'message' => $auth_code_result->get_error_message(),
+			);
+		}
+
+		// Store transfer metadata
+		$this->update_transfer_metadata( $domain_name, array(
+			'status' => self::STATUS_IN_PROGRESS,
+			'auth_code' => isset( $auth_code_result['auth_code'] ) ? $auth_code_result['auth_code'] : '',
+			'new_registrar' => $new_registrar,
+			'customer_id' => $customer_id,
+			'direction' => 'out',
+			'initiated_at' => current_time( 'mysql' ),
+		) );
+
+		Logger::log_info( 'Transfer Manager', 'Transfer out initiated', array(
+			'domain' => $domain_name,
+			'new_registrar' => $new_registrar,
+			'customer_id' => $customer_id,
+		) );
+
+		return array(
+			'success' => true,
+			'data' => $auth_code_result,
+			'message' => __( 'Authorization code generated successfully.', 'ultimate-multisite' ),
 		);
-
-		return $result;
 	}
 
 	/**
-	 * Get authorization code for domain transfer out
+	 * Cancel domain transfer
 	 *
-	 * @param string $domain Domain name
-	 * @param string $provider_key Provider key (optional)
+	 * @param string $domain_name Domain name
+	 * @param int    $customer_id Customer ID
 	 *
-	 * @return array|WP_Error Authorization code data or WP_Error on failure
+	 * @return array Array with 'success' and 'message' keys
 	 */
-	public function get_auth_code( $domain, $provider_key = null ) {
-		if ( empty( $domain ) ) {
-			return new \WP_Error( 'invalid_domain', __( 'Domain name is required', 'ultimate-multisite' ) );
-		}
+	public function cancel_transfer( $domain_name, $customer_id ) {
+		// Get transfer metadata
+		$metadata = $this->get_transfer_metadata( $domain_name );
 
-		// Get provider
-		$provider = $this->get_provider_for_domain( $domain, $provider_key );
-		if ( is_wp_error( $provider ) ) {
-			return $provider;
-		}
-
-		// Check if provider supports auth code retrieval
-		if ( ! method_exists( $provider, 'get_auth_code' ) ) {
-			return new \WP_Error(
-				'unsupported_operation',
-				sprintf(
-					/* translators: %s: Provider name */
-					__( 'Authorization code retrieval is not supported by %s', 'ultimate-multisite' ),
-					$provider->get_name()
-				)
+		if ( empty( $metadata ) || $metadata['customer_id'] !== $customer_id ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Transfer not found or permission denied.', 'ultimate-multisite' ),
 			);
 		}
 
-		// Get auth code via provider
-		$result = $provider->get_auth_code( $domain );
+		// Update status
+		$this->update_transfer_metadata( $domain_name, array(
+			'status' => self::STATUS_CANCELLED,
+			'cancelled_at' => current_time( 'mysql' ),
+		), true );
 
-		if ( is_wp_error( $result ) ) {
-			Logger::log_error(
-				$provider->get_key(),
-				sprintf( 'Failed to get auth code for %s: %s', $domain, $result->get_error_message() )
-			);
-			return $result;
-		}
+		Logger::log_info( 'Transfer Manager', 'Transfer cancelled', array(
+			'domain' => $domain_name,
+			'customer_id' => $customer_id,
+		) );
 
-		Logger::log_info(
-			$provider->get_key(),
-			sprintf( 'Retrieved auth code for domain %s', $domain )
+		return array(
+			'success' => true,
+			'message' => __( 'Domain transfer cancelled successfully.', 'ultimate-multisite' ),
 		);
-
-		return $result;
 	}
 
 	/**
-	 * Cancel a pending transfer
+	 * Check pending transfers
 	 *
-	 * @param string $domain Domain name
-	 * @param string $transfer_id Transfer ID (optional)
-	 * @param string $provider_key Provider key (optional)
-	 *
-	 * @return bool|WP_Error True on success, WP_Error on failure
+	 * @return void
 	 */
-	public function cancel_transfer( $domain, $transfer_id = null, $provider_key = null ) {
-		if ( empty( $domain ) ) {
-			return new \WP_Error( 'invalid_domain', __( 'Domain name is required', 'ultimate-multisite' ) );
-		}
+	public function check_pending_transfers() {
+		global $wpdb;
 
-		// Get provider
-		$provider = $this->get_provider_for_domain( $domain, $provider_key );
-		if ( is_wp_error( $provider ) ) {
-			return $provider;
-		}
-
-		// Check if provider supports transfer cancellation
-		if ( ! method_exists( $provider, 'cancel_transfer' ) ) {
-			return new \WP_Error(
-				'unsupported_operation',
-				sprintf(
-					/* translators: %s: Provider name */
-					__( 'Transfer cancellation is not supported by %s', 'ultimate-multisite' ),
-					$provider->get_name()
-				)
-			);
-		}
-
-		// Cancel transfer via provider
-		$result = $provider->cancel_transfer( $domain, $transfer_id );
-
-		if ( is_wp_error( $result ) ) {
-			Logger::log_error(
-				$provider->get_key(),
-				sprintf( 'Failed to cancel transfer for %s: %s', $domain, $result->get_error_message() )
-			);
-			return $result;
-		}
-
-		// Update transfer record
-		$this->update_transfer_status( $domain, 'cancelled' );
-
-		Logger::log_info(
-			$provider->get_key(),
-			sprintf( 'Cancelled transfer for domain %s', $domain )
+		// Get all domains with pending transfers
+		$table_name = $wpdb->prefix . 'reseller_panel_domain_meta';
+		$pending_transfers = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT domain_id, meta_value FROM {$table_name} WHERE meta_key = %s AND meta_value LIKE %s",
+				'transfer_data',
+				'%"status":"' . self::STATUS_PENDING . '"%'
+			)
 		);
 
-		return $result;
+		foreach ( $pending_transfers as $transfer ) {
+			$metadata = maybe_unserialize( $transfer->meta_value );
+			if ( ! is_array( $metadata ) || empty( $metadata['domain_name'] ) ) {
+				continue;
+			}
+
+			$this->update_transfer_status_for_domain( $metadata['domain_name'], $metadata );
+		}
+
+		Logger::log_info( 'Transfer Manager', 'Checked pending transfers', array(
+			'count' => count( $pending_transfers ),
+		) );
 	}
 
 	/**
-	 * Monitor active transfers (called by cron)
+	 * Update transfer status for a domain
+	 *
+	 * @param string $domain_name Domain name
+	 * @param array  $metadata Transfer metadata
+	 *
+	 * @return void
 	 */
-	public function monitor_transfers() {
-		// Get all pending/in_progress transfers
-		$transfers = $this->get_active_transfers();
-
-		if ( empty( $transfers ) ) {
+	private function update_transfer_status_for_domain( $domain_name, $metadata ) {
+		if ( empty( $metadata['provider'] ) || empty( $metadata['transfer_id'] ) ) {
 			return;
 		}
 
-		foreach ( $transfers as $transfer ) {
-			// Check status for each transfer
-			$status = $this->check_transfer_status(
-				$transfer['domain'],
-				isset( $transfer['transfer_id'] ) ? $transfer['transfer_id'] : null,
-				isset( $transfer['provider'] ) ? $transfer['provider'] : null
-			);
+		// Get provider
+		$provider_manager = Provider_Manager::get_instance();
+		$provider = $provider_manager->get_provider( $metadata['provider'] );
 
-			// If completed or failed, send notification
-			if ( ! is_wp_error( $status ) && isset( $status['status'] ) ) {
-				if ( in_array( $status['status'], array( 'completed', 'failed', 'rejected' ), true ) ) {
-					$this->send_transfer_notification( $transfer['domain'], $status );
-				}
-			}
+		if ( ! $provider ) {
+			return;
 		}
+
+		// Check transfer status
+		$status_result = $provider->check_transfer_status( $domain_name, $metadata['transfer_id'] );
+
+		if ( is_wp_error( $status_result ) ) {
+			Logger::log_error( 'Transfer Manager', 'Failed to check transfer status', array(
+				'domain' => $domain_name,
+				'error' => $status_result->get_error_message(),
+			) );
+			return;
+		}
+
+		// Update metadata if status changed
+		if ( isset( $status_result['status'] ) && $status_result['status'] !== $metadata['status'] ) {
+			$this->update_transfer_metadata( $domain_name, array(
+				'status' => $status_result['status'],
+				'updated_at' => current_time( 'mysql' ),
+			), true );
+
+			Logger::log_info( 'Transfer Manager', 'Transfer status updated', array(
+				'domain' => $domain_name,
+				'old_status' => $metadata['status'],
+				'new_status' => $status_result['status'],
+			) );
+		}
+	}
+
+	/**
+	 * Check transfer eligibility
+	 *
+	 * @param string                                                          $domain_name Domain name
+	 * @param \Reseller_Panel\Interfaces\Service_Provider_Interface $provider Provider instance
+	 *
+	 * @return array Eligibility result with 'eligible' and 'message' keys
+	 */
+	private function check_transfer_eligibility( $domain_name, $provider ) {
+		// Check transfer lock period
+		$lock_days = get_site_option( 'reseller_panel_transfer_lock_days', 60 );
+
+		// This would check domain registration date
+		// For now, return eligible
+		return array(
+			'eligible' => true,
+			'message' => '',
+		);
 	}
 
 	/**
 	 * Get provider for a domain
 	 *
-	 * @param string $domain Domain name
-	 * @param string $provider_key Provider key (optional)
+	 * @param string $domain_name Domain name
 	 *
-	 * @return object|WP_Error Provider instance or WP_Error
+	 * @return \Reseller_Panel\Interfaces\Service_Provider_Interface|null
 	 */
-	private function get_provider_for_domain( $domain, $provider_key = null ) {
+	private function get_domain_provider( $domain_name ) {
+		// Get the first available configured provider that supports domains
 		$provider_manager = Provider_Manager::get_instance();
+		$providers = $provider_manager->get_available_providers( 'domains' );
 
-		// If provider key specified, use it
-		if ( $provider_key ) {
-			$provider = $provider_manager->get_provider( $provider_key );
-			if ( ! $provider ) {
-				return new \WP_Error(
-					'invalid_provider',
-					sprintf(
-						/* translators: %s: Provider key */
-						__( 'Provider %s not found', 'ultimate-multisite' ),
-						$provider_key
-					)
-				);
-			}
-			return $provider;
-		}
-
-		// Otherwise, get the primary provider for domains service
-		$providers = $provider_manager->get_providers_for_service( 'domains' );
 		if ( empty( $providers ) ) {
-			return new \WP_Error(
-				'no_provider',
-				__( 'No domain provider configured', 'ultimate-multisite' )
-			);
+			return null;
 		}
 
+		// Return the first provider
 		return reset( $providers );
 	}
 
 	/**
-	 * Save transfer record
+	 * Update transfer metadata
 	 *
-	 * @param string $domain Domain name
-	 * @param string $provider Provider key
-	 * @param string $status Transfer status
-	 * @param array  $data Additional data
-	 */
-	private function save_transfer_record( $domain, $provider, $status, $data = array() ) {
-		$transfers = get_site_option( 'reseller_panel_transfers', array() );
-
-		$transfers[ $domain ] = array(
-			'domain'       => $domain,
-			'provider'     => $provider,
-			'status'       => $status,
-			'transfer_id'  => isset( $data['transfer_id'] ) ? $data['transfer_id'] : '',
-			'created_at'   => current_time( 'mysql' ),
-			'updated_at'   => current_time( 'mysql' ),
-			'data'         => $data,
-		);
-
-		update_site_option( 'reseller_panel_transfers', $transfers );
-	}
-
-	/**
-	 * Update transfer status
+	 * @param string $domain_name Domain name
+	 * @param array  $data Metadata to update
+	 * @param bool   $merge Whether to merge with existing data
 	 *
-	 * @param string $domain Domain name
-	 * @param string $status New status
-	 * @param array  $data Additional data
+	 * @return void
 	 */
-	private function update_transfer_status( $domain, $status, $data = array() ) {
-		$transfers = get_site_option( 'reseller_panel_transfers', array() );
+	private function update_transfer_metadata( $domain_name, $data, $merge = true ) {
+		global $wpdb;
 
-		if ( isset( $transfers[ $domain ] ) ) {
-			$transfers[ $domain ]['status']     = $status;
-			$transfers[ $domain ]['updated_at'] = current_time( 'mysql' );
+		$table_name = $wpdb->prefix . 'reseller_panel_domain_meta';
 
-			if ( ! empty( $data ) ) {
-				$transfers[ $domain ]['data'] = array_merge(
-					isset( $transfers[ $domain ]['data'] ) ? $transfers[ $domain ]['data'] : array(),
-					$data
-				);
-			}
-
-			update_site_option( 'reseller_panel_transfers', $transfers );
-		}
-	}
-
-	/**
-	 * Get active transfers
-	 *
-	 * @return array
-	 */
-	private function get_active_transfers() {
-		$transfers = get_site_option( 'reseller_panel_transfers', array() );
-
-		// Filter for active statuses
-		return array_filter(
-			$transfers,
-			function ( $transfer ) {
-				return in_array( $transfer['status'], array( 'pending', 'in_progress' ), true );
-			}
-		);
-	}
-
-	/**
-	 * Send transfer notification
-	 *
-	 * @param string $domain Domain name
-	 * @param array  $status_data Transfer status data
-	 */
-	private function send_transfer_notification( $domain, $status_data ) {
-		// Get admin email
-		$admin_email = get_site_option( 'admin_email' );
-
-		$status = isset( $status_data['status'] ) ? $status_data['status'] : 'unknown';
-
-		$subject = sprintf(
-			/* translators: 1: Domain name, 2: Transfer status */
-			__( 'Domain Transfer Update: %1$s - %2$s', 'ultimate-multisite' ),
-			$domain,
-			ucfirst( $status )
-		);
-
-		$message = sprintf(
-			/* translators: 1: Domain name, 2: Transfer status */
-			__( 'The transfer for domain %1$s has been updated to: %2$s', 'ultimate-multisite' ),
-			$domain,
-			ucfirst( $status )
-		);
-
-		if ( isset( $status_data['message'] ) ) {
-			$message .= "\n\n" . $status_data['message'];
+		// Get existing metadata if merging
+		if ( $merge ) {
+			$existing = $this->get_transfer_metadata( $domain_name );
+			$data = array_merge( $existing, $data );
 		}
 
-		wp_mail( $admin_email, $subject, $message );
-	}
+		// Add domain name to data
+		$data['domain_name'] = $domain_name;
 
-	/**
-	 * Check if user can manage transfers for a domain
-	 *
-	 * @param string $domain Domain name
-	 * @param int    $user_id User ID (optional, defaults to current user)
-	 *
-	 * @return bool True if user can manage transfers
-	 */
-	public function user_can_manage_transfer( $domain, $user_id = null ) {
-		if ( ! $user_id ) {
-			$user_id = get_current_user_id();
-		}
-
-		// Super admins can always manage transfers
-		if ( is_super_admin( $user_id ) ) {
-			return true;
-		}
-
-		// Check if user owns the domain
-		// This would integrate with Ultimate Multisite's customer/domain ownership
-		// For now, we'll use a simple filter to allow customization
-		$can_manage = apply_filters( 'reseller_panel_user_can_manage_transfer', false, $domain, $user_id );
-
-		return $can_manage;
-	}
-
-	/**
-	 * AJAX handler: Transfer domain
-	 */
-	public function ajax_transfer_domain() {
-		check_ajax_referer( 'reseller_panel_transfer_nonce', 'nonce' );
-
-		$domain       = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
-		$auth_code    = isset( $_POST['auth_code'] ) ? sanitize_text_field( wp_unslash( $_POST['auth_code'] ) ) : '';
-		$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
-
-		if ( ! $this->user_can_manage_transfer( $domain ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied', 'ultimate-multisite' ) ) );
-		}
-
-		// Get registrant info from POST data
-		$registrant_info = array();
-		if ( isset( $_POST['registrant'] ) && is_array( $_POST['registrant'] ) ) {
-			foreach ( $_POST['registrant'] as $key => $value ) {
-				$registrant_info[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( $value ) );
-			}
-		}
-
-		$result = $this->transfer_domain( $domain, $auth_code, $registrant_info, $provider_key );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success(
+		// Store as serialized data
+		$wpdb->replace(
+			$table_name,
 			array(
-				'message' => __( 'Domain transfer initiated successfully', 'ultimate-multisite' ),
-				'data'    => $result,
+				'domain_id' => 0, // We're using domain_name in meta_value for simplicity
+				'meta_key' => 'transfer_data',
+				'meta_value' => maybe_serialize( $data ),
+			),
+			array( '%d', '%s', '%s' )
+		);
+	}
+
+	/**
+	 * Get transfer metadata
+	 *
+	 * @param string $domain_name Domain name
+	 *
+	 * @return array Transfer metadata
+	 */
+	public function get_transfer_metadata( $domain_name ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'reseller_panel_domain_meta';
+
+		$result = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$table_name} WHERE meta_key = %s AND meta_value LIKE %s LIMIT 1",
+				'transfer_data',
+				'%"domain_name":"' . $wpdb->esc_like( $domain_name ) . '"%'
 			)
 		);
+
+		if ( ! $result ) {
+			return array();
+		}
+
+		$data = maybe_unserialize( $result );
+		return is_array( $data ) ? $data : array();
 	}
 
 	/**
-	 * AJAX handler: Check transfer status
+	 * AJAX handler: Initiate transfer in
+	 *
+	 * @return void
 	 */
-	public function ajax_check_transfer_status() {
-		check_ajax_referer( 'reseller_panel_transfer_nonce', 'nonce' );
+	public function ajax_initiate_transfer_in() {
+		check_ajax_referer( 'reseller-panel-customer', 'nonce' );
 
-		$domain       = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
-		$transfer_id  = isset( $_POST['transfer_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transfer_id'] ) ) : null;
-		$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
-
-		if ( ! $this->user_can_manage_transfer( $domain ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied', 'ultimate-multisite' ) ) );
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
 		}
 
-		$result = $this->check_transfer_status( $domain, $transfer_id, $provider_key );
+		$domain_name = isset( $_POST['domain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['domain_name'] ) ) : '';
+		$auth_code = isset( $_POST['auth_code'] ) ? sanitize_text_field( wp_unslash( $_POST['auth_code'] ) ) : '';
+		$provider_id = isset( $_POST['provider_id'] ) ? sanitize_text_field( wp_unslash( $_POST['provider_id'] ) ) : '';
+		$customer_id = get_current_user_id();
 
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		if ( empty( $domain_name ) || empty( $auth_code ) || empty( $provider_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Domain name, authorization code, and provider are required.', 'ultimate-multisite' ) ) );
 		}
 
-		wp_send_json_success( array( 'status' => $result ) );
+		$result = $this->initiate_transfer_in( $domain_name, $auth_code, $customer_id, $provider_id );
+
+		if ( $result['success'] ) {
+			wp_send_json_success( $result );
+		} else {
+			wp_send_json_error( $result );
+		}
 	}
 
 	/**
-	 * AJAX handler: Get authorization code
+	 * AJAX handler: Initiate transfer out
+	 *
+	 * @return void
 	 */
-	public function ajax_get_auth_code() {
-		check_ajax_referer( 'reseller_panel_transfer_nonce', 'nonce' );
+	public function ajax_initiate_transfer_out() {
+		check_ajax_referer( 'reseller-panel-customer', 'nonce' );
 
-		$domain       = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
-		$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
-
-		if ( ! $this->user_can_manage_transfer( $domain ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied', 'ultimate-multisite' ) ) );
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
 		}
 
-		$result = $this->get_auth_code( $domain, $provider_key );
+		$domain_name = isset( $_POST['domain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['domain_name'] ) ) : '';
+		$new_registrar = isset( $_POST['new_registrar'] ) ? sanitize_text_field( wp_unslash( $_POST['new_registrar'] ) ) : '';
+		$customer_id = get_current_user_id();
 
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		if ( empty( $domain_name ) || empty( $new_registrar ) ) {
+			wp_send_json_error( array( 'message' => __( 'Domain name and new registrar are required.', 'ultimate-multisite' ) ) );
 		}
 
-		wp_send_json_success( array( 'auth_code' => $result ) );
+		$result = $this->initiate_transfer_out( $domain_name, $customer_id, $new_registrar );
+
+		if ( $result['success'] ) {
+			wp_send_json_success( $result );
+		} else {
+			wp_send_json_error( $result );
+		}
 	}
 
 	/**
 	 * AJAX handler: Cancel transfer
+	 *
+	 * @return void
 	 */
 	public function ajax_cancel_transfer() {
-		check_ajax_referer( 'reseller_panel_transfer_nonce', 'nonce' );
+		check_ajax_referer( 'reseller-panel-customer', 'nonce' );
 
-		$domain       = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
-		$transfer_id  = isset( $_POST['transfer_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transfer_id'] ) ) : null;
-		$provider_key = isset( $_POST['provider'] ) ? sanitize_key( $_POST['provider'] ) : null;
-
-		if ( ! $this->user_can_manage_transfer( $domain ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied', 'ultimate-multisite' ) ) );
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
 		}
 
-		$result = $this->cancel_transfer( $domain, $transfer_id, $provider_key );
+		$domain_name = isset( $_POST['domain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['domain_name'] ) ) : '';
+		$customer_id = get_current_user_id();
 
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		if ( empty( $domain_name ) ) {
+			wp_send_json_error( array( 'message' => __( 'Domain name is required.', 'ultimate-multisite' ) ) );
 		}
 
-		wp_send_json_success( array( 'message' => __( 'Transfer cancelled successfully', 'ultimate-multisite' ) ) );
+		$result = $this->cancel_transfer( $domain_name, $customer_id );
+
+		if ( $result['success'] ) {
+			wp_send_json_success( $result );
+		} else {
+			wp_send_json_error( $result );
+		}
 	}
 
 	/**
-	 * Get supported transfer statuses
+	 * AJAX handler: Get transfer status
 	 *
-	 * @return array
+	 * @return void
 	 */
-	public function get_transfer_statuses() {
-		return $this->transfer_statuses;
+	public function ajax_get_transfer_status() {
+		check_ajax_referer( 'reseller-panel-customer', 'nonce' );
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ultimate-multisite' ) ) );
+		}
+
+		$domain_name = isset( $_POST['domain_name'] ) ? sanitize_text_field( wp_unslash( $_POST['domain_name'] ) ) : '';
+
+		if ( empty( $domain_name ) ) {
+			wp_send_json_error( array( 'message' => __( 'Domain name is required.', 'ultimate-multisite' ) ) );
+		}
+
+		$metadata = $this->get_transfer_metadata( $domain_name );
+
+		if ( empty( $metadata ) ) {
+			wp_send_json_error( array( 'message' => __( 'Transfer not found.', 'ultimate-multisite' ) ) );
+		}
+
+		wp_send_json_success( array(
+			'data' => $metadata,
+		) );
 	}
 }

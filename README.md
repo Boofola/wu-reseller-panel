@@ -101,6 +101,16 @@ Comprehensive domain management plugin for Ultimate Multisite - sell domains, ma
 ✅ **Responsive UI** - Professional admin interface matching UMS design  
 ✅ **Fully Documented** - Complete architecture guide included
 
+### 🎯 Domain Seller Features (v2.1+)
+✅ **DNS Management** - Comprehensive DNS record management (A, AAAA, CNAME, MX, TXT, NS, SRV, CAA, PTR)
+✅ **Domain Transfers** - Transfer domains in/out with status tracking
+✅ **Auto-Renewal** - Automatic domain renewal with configurable notice periods
+✅ **Customer Portal** - Self-service DNS and domain management for customers
+✅ **Cron Integration** - Scheduled transfer checks and batch renewals
+✅ **Metadata System** - Extensible domain metadata storage
+
+**📚 See [DOMAIN_SELLER_INTEGRATION.md](DOMAIN_SELLER_INTEGRATION.md) for detailed documentation.**
+
 ## Requirements
 
 - WordPress Multisite (required)
