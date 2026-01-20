@@ -356,7 +356,8 @@ class Domain_Renewal_Manager {
 
 		$table_name = $wpdb->prefix . 'reseller_panel_domain_meta';
 
-		$search_pattern = '%"customer_id":' . intval( $customer_id ) . '%';
+		// Properly escape for LIKE query
+		$search_pattern = '%' . $wpdb->esc_like( '"customer_id":' . intval( $customer_id ) ) . '%';
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
