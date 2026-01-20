@@ -175,4 +175,98 @@ abstract class Base_Service_Provider implements Service_Provider_Interface {
 	 * @return bool|WP_Error
 	 */
 	abstract public function test_connection();
+
+	/**
+	 * Get DNS records for a domain
+	 *
+	 * @param string $domain Domain name
+	 *
+	 * @return array|WP_Error Array of DNS records or WP_Error on failure
+	 */
+	public function get_dns_records( $domain ) {
+		return new \WP_Error(
+			'unsupported_operation',
+			sprintf(
+				/* translators: %s: Provider name */
+				__( 'DNS management is not supported by %s', 'ultimate-multisite' ),
+				$this->get_name()
+			)
+		);
+	}
+
+	/**
+	 * Add a DNS record
+	 *
+	 * @param string $domain Domain name
+	 * @param array  $record_data Record data (type, name, value, ttl, priority)
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure
+	 */
+	public function add_dns_record( $domain, $record_data ) {
+		return new \WP_Error(
+			'unsupported_operation',
+			sprintf(
+				/* translators: %s: Provider name */
+				__( 'DNS management is not supported by %s', 'ultimate-multisite' ),
+				$this->get_name()
+			)
+		);
+	}
+
+	/**
+	 * Update a DNS record
+	 *
+	 * @param string $domain Domain name
+	 * @param string $record_id Record ID
+	 * @param array  $record_data Updated record data
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure
+	 */
+	public function update_dns_record( $domain, $record_id, $record_data ) {
+		return new \WP_Error(
+			'unsupported_operation',
+			sprintf(
+				/* translators: %s: Provider name */
+				__( 'DNS management is not supported by %s', 'ultimate-multisite' ),
+				$this->get_name()
+			)
+		);
+	}
+
+	/**
+	 * Delete a DNS record
+	 *
+	 * @param string $domain Domain name
+	 * @param string $record_id Record ID
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure
+	 */
+	public function delete_dns_record( $domain, $record_id ) {
+		return new \WP_Error(
+			'unsupported_operation',
+			sprintf(
+				/* translators: %s: Provider name */
+				__( 'DNS management is not supported by %s', 'ultimate-multisite' ),
+				$this->get_name()
+			)
+		);
+	}
+
+	/**
+	 * Reset DNS records to default
+	 *
+	 * @param string $domain Domain name
+	 *
+	 * @return bool|WP_Error True on success, WP_Error on failure
+	 */
+	public function reset_dns_records( $domain ) {
+		return new \WP_Error(
+			'unsupported_operation',
+			sprintf(
+				/* translators: %s: Provider name */
+				__( 'DNS management is not supported by %s', 'ultimate-multisite' ),
+				$this->get_name()
+			)
+		);
+	}
 }
