@@ -77,6 +77,10 @@ require_once RESELLER_PANEL_PATH . 'inc/class-dns-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-transfer-manager.php';
 require_once RESELLER_PANEL_PATH . 'inc/class-domain-renewal-manager.php';
 
+// Frontend integration
+require_once RESELLER_PANEL_PATH . 'inc/class-checkout-integration.php';
+require_once RESELLER_PANEL_PATH . 'inc/class-customer-portal.php';
+
 // Admin pages
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-services-settings-page.php';
