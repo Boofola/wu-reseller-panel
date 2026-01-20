@@ -72,6 +72,11 @@ require_once RESELLER_PANEL_PATH . 'inc/product-types/class-domain-product-type.
 // Importers
 require_once RESELLER_PANEL_PATH . 'inc/importers/class-domain-importer.php';
 
+// Managers
+require_once RESELLER_PANEL_PATH . 'inc/class-dns-manager.php';
+require_once RESELLER_PANEL_PATH . 'inc/class-domain-transfer-manager.php';
+require_once RESELLER_PANEL_PATH . 'inc/class-domain-renewal-manager.php';
+
 // Admin pages
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-admin-page.php';
 require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-services-settings-page.php';
@@ -114,6 +119,11 @@ require_once RESELLER_PANEL_PATH . 'inc/admin-pages/class-settings-manager.php';
 private function init_components() {
 // Initialize provider manager
 Provider_Manager::get_instance();
+
+// Initialize domain managers
+DNS_Manager::get_instance();
+Domain_Transfer_Manager::get_instance();
+Domain_Renewal_Manager::get_instance();
 
 // Initialize admin pages
 Admin_Pages\Services_Settings_Page::get_instance();
