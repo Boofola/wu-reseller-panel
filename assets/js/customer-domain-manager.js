@@ -10,20 +10,61 @@
 	'use strict';
 
 	/**
+	 * Show notification message
+	 */
+	function showNotification(message, type) {
+		type = type || 'info';
+		var $notification = $('<div class="domain-notification notification-' + type + '">' + 
+			'<span class="notification-message">' + escapeHtml(message) + '</span>' + 
+			'<button class="notification-close">&times;</button>' + 
+			'</div>');
+		
+		$('.domain-manager-content').prepend($notification);
+		
+		// Auto-dismiss after 5 seconds
+		setTimeout(function() {
+			$notification.fadeOut(function() {
+				$(this).remove();
+			});
+		}, 5000);
+		
+		// Close button handler
+		$notification.find('.notification-close').on('click', function() {
+			$notification.fadeOut(function() {
+				$(this).remove();
+			});
+		});
+	}
+
+	/**
+	 * Escape HTML to prevent XSS
+	 */
+	function escapeHtml(text) {
+		var map = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#039;'
+		};
+		return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+	}
+
+	/**
 	 * Manage DNS for a domain
 	 */
-	window.manageDNS = function(domain) {
+	function manageDNS(domain) {
 		// Switch to DNS tab
 		$('.tab-link[href="?tab=dns"]').click();
 
 		// Select the domain
 		$('#dns-domain-select').val(domain).trigger('change');
-	};
+	}
 
 	/**
 	 * Renew a domain
 	 */
-	window.renewDomain = function(domain) {
+	function renewDomain(domain) {
 		if (!confirm(window.resellerPanelCustomer.messages.confirmRenew)) {
 			return;
 		}
@@ -41,33 +82,60 @@
 			},
 			success: function(response) {
 				if (response.success) {
-					alert(response.data.message || window.resellerPanelCustomer.messages.success);
-					location.reload();
+					showNotification(response.data.message || window.resellerPanelCustomer.messages.success, 'success');
+					setTimeout(function() {
+						location.reload();
+					}, 1000);
 				} else {
-					alert(response.data.message || window.resellerPanelCustomer.messages.error);
+					showNotification(response.data.message || window.resellerPanelCustomer.messages.error, 'error');
 				}
 			},
 			error: function() {
-				alert(window.resellerPanelCustomer.messages.error);
+				showNotification(window.resellerPanelCustomer.messages.error, 'error');
 			}
 		});
-	};
+	}
 
 	/**
 	 * Transfer a domain
 	 */
-	window.transferDomain = function(domain) {
+	function transferDomain(domain) {
 		// Switch to transfers tab
 		$('.tab-link[href="?tab=transfers"]').click();
 
 		// Fill in domain name
 		$('#transfer_out_domain').val(domain);
-	};
+	}
 
 	/**
 	 * Initialize
 	 */
 	$(document).ready(function() {
+		// Attach event listeners to domain action buttons
+		$(document).on('click', '.manage-dns-btn', function(e) {
+			e.preventDefault();
+			var domain = $(this).data('domain');
+			if (domain) {
+				manageDNS(domain);
+			}
+		});
+
+		$(document).on('click', '.renew-domain-btn', function(e) {
+			e.preventDefault();
+			var domain = $(this).data('domain');
+			if (domain) {
+				renewDomain(domain);
+			}
+		});
+
+		$(document).on('click', '.transfer-domain-btn', function(e) {
+			e.preventDefault();
+			var domain = $(this).data('domain');
+			if (domain) {
+				transferDomain(domain);
+			}
+		});
+
 		// Auto-renewal toggle
 		$('.auto-renew-toggle').on('change', function() {
 			var $toggle = $(this);
@@ -86,13 +154,13 @@
 				},
 				success: function(response) {
 					if (!response.success) {
-						alert(response.data.message || window.resellerPanelCustomer.messages.error);
+						showNotification(response.data.message || window.resellerPanelCustomer.messages.error, 'error');
 						// Revert toggle
 						$toggle.prop('checked', !enabled);
 					}
 				},
 				error: function() {
-					alert(window.resellerPanelCustomer.messages.error);
+					showNotification(window.resellerPanelCustomer.messages.error, 'error');
 					// Revert toggle
 					$toggle.prop('checked', !enabled);
 				}
@@ -114,7 +182,7 @@
 		$('#get-auth-code').on('click', function() {
 			var domain = $('#transfer_out_domain').val();
 			if (!domain) {
-				alert('Please select a domain');
+				showNotification('Please select a domain', 'error');
 				return;
 			}
 
@@ -133,15 +201,18 @@
 				success: function(response) {
 					if (response.success) {
 						var authCode = response.data.auth_code || response.data.code;
-						$('#auth-code-display').html(
-							'<strong>Authorization Code:</strong> <code>' + authCode + '</code>'
-						).show();
+						$('#auth-code-display')
+							.html('<strong>Authorization Code:</strong> <code></code>')
+							.find('code')
+							.text(authCode)
+							.end()
+							.show();
 					} else {
-						alert(response.data.message || window.resellerPanelCustomer.messages.error);
+						showNotification(response.data.message || window.resellerPanelCustomer.messages.error, 'error');
 					}
 				},
 				error: function() {
-					alert(window.resellerPanelCustomer.messages.error);
+					showNotification(window.resellerPanelCustomer.messages.error, 'error');
 				},
 				complete: function() {
 					$button.prop('disabled', false).text('Get Authorization Code');
@@ -176,14 +247,14 @@
 				},
 				success: function(response) {
 					if (response.success) {
-						alert(response.data.message || window.resellerPanelCustomer.messages.success);
+						showNotification(response.data.message || window.resellerPanelCustomer.messages.success, 'success');
 						$form[0].reset();
 					} else {
-						alert(response.data.message || window.resellerPanelCustomer.messages.error);
+						showNotification(response.data.message || window.resellerPanelCustomer.messages.error, 'error');
 					}
 				},
 				error: function() {
-					alert(window.resellerPanelCustomer.messages.error);
+					showNotification(window.resellerPanelCustomer.messages.error, 'error');
 				},
 				complete: function() {
 					$button.prop('disabled', false).text('Initiate Transfer');
@@ -222,35 +293,36 @@
 	}
 
 	/**
-	 * Display DNS records
+	 * Display DNS records with proper escaping
 	 */
 	function displayDNSRecords(records) {
 		var $list = $('#dns-records-list');
-		var html = '<table class="dns-records-table">';
-		html += '<thead><tr>';
-		html += '<th>Type</th>';
-		html += '<th>Name</th>';
-		html += '<th>Value</th>';
-		html += '<th>TTL</th>';
-		html += '<th>Actions</th>';
-		html += '</tr></thead><tbody>';
+		var $table = $('<table class="dns-records-table"></table>');
+		var $thead = $('<thead><tr>' + 
+			'<th>Type</th>' + 
+			'<th>Name</th>' + 
+			'<th>Value</th>' + 
+			'<th>TTL</th>' + 
+			'<th>Actions</th>' + 
+			'</tr></thead>');
+		var $tbody = $('<tbody></tbody>');
 
 		if (records.length === 0) {
-			html += '<tr><td colspan="5">No DNS records found</td></tr>';
+			$tbody.append('<tr><td colspan="5">No DNS records found</td></tr>');
 		} else {
 			records.forEach(function(record) {
-				html += '<tr>';
-				html += '<td>' + record.type + '</td>';
-				html += '<td>' + record.name + '</td>';
-				html += '<td>' + record.value + '</td>';
-				html += '<td>' + record.ttl + '</td>';
-				html += '<td><button class="btn btn-sm btn-outline">Edit</button></td>';
-				html += '</tr>';
+				var $row = $('<tr></tr>');
+				$row.append($('<td></td>').text(record.type || ''));
+				$row.append($('<td></td>').text(record.name || ''));
+				$row.append($('<td></td>').text(record.value || ''));
+				$row.append($('<td></td>').text(record.ttl || ''));
+				$row.append($('<td></td>').html('<button class="btn btn-sm btn-outline">Edit</button>'));
+				$tbody.append($row);
 			});
 		}
 
-		html += '</tbody></table>';
-		$list.html(html);
+		$table.append($thead).append($tbody);
+		$list.html('').append($table);
 	}
 
 })(jQuery);

@@ -24,7 +24,6 @@ class DNS_Manager {
 	 * Singleton instance
 	 *
 	 * @var DNS_Manager|null
-	 * @var self
 	 */
 	private static $instance = null;
 
@@ -49,7 +48,6 @@ class DNS_Manager {
 	 * Get singleton instance
 	 *
 	 * @return DNS_Manager
-	 * @return self
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
